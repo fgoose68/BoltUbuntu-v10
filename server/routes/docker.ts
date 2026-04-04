@@ -40,9 +40,14 @@ dockerRouter.get('/containers', async (req: AuthRequest, res) => {
 
     const containers = parseDockerPs(stdout);
     res.json({ containers });
-  } catch (error) {
+  } catch (error: any) {
+    // Docker not installed or not accessible - return empty list
+    if (error.message?.includes('not found') || error.message?.includes('Cannot connect')) {
+      console.log('Docker not available, returning empty containers list');
+      return res.json({ containers: [], dockerAvailable: false });
+    }
     console.error('Error fetching containers:', error);
-    res.status(500).json({ error: 'Failed to fetch containers' });
+    res.json({ containers: [], dockerAvailable: false });
   }
 });
 
@@ -164,9 +169,10 @@ dockerRouter.get('/containers/status', async (req: AuthRequest, res) => {
     });
 
     res.json({ containers });
-  } catch (error) {
-    console.error('Error fetching container status:', error);
-    res.status(500).json({ error: 'Failed to fetch container status' });
+  } catch (error: any) {
+    // Docker not available - return empty list gracefully
+    console.log('Docker not available for container status');
+    res.json({ containers: [], dockerAvailable: false });
   }
 });
 

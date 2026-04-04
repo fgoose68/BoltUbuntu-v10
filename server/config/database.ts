@@ -87,6 +87,17 @@ export const initializeDatabase = async () => {
       uploaded_by TEXT NOT NULL,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP
     );
+
+    CREATE TABLE IF NOT EXISTS alert_thresholds (
+      id TEXT PRIMARY KEY,
+      metric_name TEXT NOT NULL,
+      threshold_value REAL NOT NULL,
+      comparison TEXT DEFAULT 'gt',
+      enabled INTEGER DEFAULT 1,
+      notify_pushover INTEGER DEFAULT 0,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
   `);
 
   console.log('Database schema initialized successfully');
