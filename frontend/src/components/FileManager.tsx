@@ -8,8 +8,10 @@ interface OfficeFile {
   file_type: string;
   file_size: number;
   storage_location: string;
-  uploaded_at: string;
-  uploader: { name: string };
+  uploaded_at?: string;
+  created_at?: string;
+  uploaded_by?: string;
+  uploader?: { name: string };
 }
 
 export function FileManager() {
@@ -258,8 +260,8 @@ export function FileManager() {
                     }`}>
                       <div>Size: {formatBytes(file.file_size)}</div>
                       <div>Location: {file.storage_location}</div>
-                      <div>Uploaded: {formatDate(file.uploaded_at)}</div>
-                      <div>By: {file.uploader.name}</div>
+                      <div>Uploaded: {formatDate(file.uploaded_at || file.created_at || '')}</div>
+                      <div>By: {file.uploader?.name || file.uploaded_by || 'Unknown'}</div>
                     </div>
                   </div>
                 </div>
