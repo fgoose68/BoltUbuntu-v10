@@ -1,0 +1,49 @@
+version: '3.8'
+
+services:
+  dashboard:
+    build: .
+    container_name: raspberry-dashboard
+    ports:
+      - "3050:3050"
+    environment:
+      - NODE_ENV=production
+      - BACKEND_PORT=3050
+      - VITE_SUPABASE_URL=${VITE_SUPABASE_URL}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+      - JWT_SECRET=${JWT_SECRET:-change-this-secret-in-production}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./backups:/backups
+      - ./uploads:/uploads
+      - nas-mount:/mnt/nas
+    restart: unless-stopped
+    networks:
+      - dashboard-network
+
+  nginx:
+    image: nginx:alpine
+    container_name: dashboard-nginx
+    ports:
+      - "3051:80"
+      - "3052:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - dashboard
+    restart: unless-stopped
+    networks:
+      - dashboard-network
+
+volumes:
+  nas-mount:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /mnt/nas
+
+networks:
+  dashboard-network:
+    driver: bridge
