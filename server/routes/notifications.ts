@@ -27,7 +27,7 @@ notificationsRouter.post('/test', async (req: AuthRequest, res) => {
 
 notificationsRouter.get('/list', async (req: AuthRequest, res) => {
   try {
-    const notifications = await query(
+    const notifications = query(
       'SELECT * FROM notifications WHERE user_id = ? ORDER BY created_at DESC LIMIT 50',
       [req.userId]
     );
@@ -41,7 +41,7 @@ notificationsRouter.get('/list', async (req: AuthRequest, res) => {
 notificationsRouter.put('/:notificationId/read', async (req: AuthRequest, res) => {
   try {
     const { notificationId } = req.params;
-    await run(
+    run(
       'UPDATE notifications SET read = ? WHERE id = ? AND user_id = ?',
       [true, notificationId, req.userId]
     );

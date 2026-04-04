@@ -1,0 +1,86 @@
+{
+  "timestamp": "2026-04-04T09:29:41.984047",
+  "total_tests": 13,
+  "passed_tests": 11,
+  "success_rate": 84.61538461538461,
+  "test_details": [
+    {
+      "test": "Health Check",
+      "status": "PASS",
+      "details": "Status: 200, Response: {\n  \"status\": \"ok\",\n  \"timestamp\": \"2026-04-04T09:29:41.442Z\"\n}...",
+      "timestamp": "2026-04-04T09:29:41.443628"
+    },
+    {
+      "test": "Login",
+      "status": "PASS",
+      "details": "Status: 200, Response: {\n  \"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiIwOWMzYWJjZC03YmJkLTRmMTQtYTUzYi0xYTQ1NTE4YWFkNzQiLCJlbWFpbCI6ImFkbWluQGRhc2hib2FyZC5sb2NhbCIsImlhdCI6MTc3NTI5NDk4MSwiZXhwIjoxNzc1ODk5N...",
+      "timestamp": "2026-04-04T09:29:41.543633"
+    },
+    {
+      "test": "Token Extraction",
+      "status": "PASS",
+      "details": "Token received: eyJhbGciOiJIUzI1NiIs...",
+      "timestamp": "2026-04-04T09:29:41.543745"
+    },
+    {
+      "test": "Auth Me",
+      "status": "PASS",
+      "details": "Status: 200, Response: {\n  \"user\": {\n    \"id\": \"09c3abcd-7bbd-4f14-a53b-1a45518aad74\",\n    \"email\": \"admin@dashboard.local\",\n    \"name\": \"Admin User\"\n  }\n}...",
+      "timestamp": "2026-04-04T09:29:41.546849"
+    },
+    {
+      "test": "Current Metrics",
+      "status": "PASS",
+      "details": "Status: 200, Response: {\n  \"metrics\": {\n    \"cpu\": {\n      \"usage\": 9.35,\n      \"cores\": 8\n    },\n    \"ram\": {\n      \"total\": 32043,\n      \"used\": 30067,\n      \"free\": 1977,\n      \"usage\": 93.83\n    },\n    \"disk\": {\n      \"...",
+      "timestamp": "2026-04-04T09:29:41.828399"
+    },
+    {
+      "test": "Metrics Structure",
+      "status": "PASS",
+      "details": "All required metrics present: ['cpu', 'ram', 'disk', 'temperature', 'network']",
+      "timestamp": "2026-04-04T09:29:41.828499"
+    },
+    {
+      "test": "Metrics History",
+      "status": "FAIL",
+      "details": "Status: 500, Expected: 200, Response: {\"error\":\"Failed to fetch metrics history\"}",
+      "timestamp": "2026-04-04T09:29:41.833431"
+    },
+    {
+      "test": "Docker Containers",
+      "status": "FAIL",
+      "details": "Status: 500, Expected: 200, Response: {\"error\":\"Failed to fetch containers\"}",
+      "timestamp": "2026-04-04T09:29:41.839937"
+    },
+    {
+      "test": "Files List",
+      "status": "PASS",
+      "details": "Status: 200, Response: {\n  \"files\": []\n}...",
+      "timestamp": "2026-04-04T09:29:41.842716"
+    },
+    {
+      "test": "Unauthorized Metrics Current",
+      "status": "PASS",
+      "details": "Status: 401, Response: {\n  \"error\": \"Access token required\"\n}...",
+      "timestamp": "2026-04-04T09:29:41.844385"
+    },
+    {
+      "test": "Unauthorized Docker Containers",
+      "status": "PASS",
+      "details": "Status: 401, Response: {\n  \"error\": \"Access token required\"\n}...",
+      "timestamp": "2026-04-04T09:29:41.845455"
+    },
+    {
+      "test": "Unauthorized Files List",
+      "status": "PASS",
+      "details": "Status: 401, Response: {\n  \"error\": \"Access token required\"\n}...",
+      "timestamp": "2026-04-04T09:29:41.846718"
+    },
+    {
+      "test": "User Registration",
+      "status": "PASS",
+      "details": "Status: 200, Response: {\n  \"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJlNjljMDU4OS02Zjg5LTQ3NTgtOGE1MC0yOGQ0OWE4ZTFkY2YiLCJlbWFpbCI6InRlc3RAZGFzaGJvYXJkLmxvY2FsIiwiaWF0IjoxNzc1Mjk0OTgxLCJleHAiOjE3NzU4OTk3O...",
+      "timestamp": "2026-04-04T09:29:41.983945"
+    }
+  ]
+}

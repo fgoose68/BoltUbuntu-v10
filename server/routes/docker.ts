@@ -58,7 +58,7 @@ dockerRouter.post('/backup/:containerId', async (req: AuthRequest, res) => {
 
     const backupId = randomUUID();
 
-    await run(
+    run(
       'INSERT INTO docker_backups (id, container_name, backup_path, status) VALUES (?, ?, ?, ?)',
       [backupId, containerName, backupPath, 'pending']
     );
@@ -81,9 +81,9 @@ async function performBackup(
   userId: string
 ) {
   try {
-    await run('UPDATE docker_backups SET status = ? WHERE id = ?', ['running', backupId]);
+    run('UPDATE docker_backups SET status = ? WHERE id = ?', ['running', backupId]);
 
-    await logEvent('backup', 'info', `Backup started for container ${containerId}`, { backupId }, userId);
+    logEvent('backup', 'info', `Backup started for container ${containerId}`, { backupId }, userId);
 
     let command = '';
     if (backupType === 'export') {
@@ -97,12 +97,12 @@ async function performBackup(
     const { stdout: sizeOut } = await execAsync(`stat -f%z "${backupPath}" 2>/dev/null || stat -c%s "${backupPath}" 2>/dev/null || echo 0`);
     const fileSize = parseInt(sizeOut.trim()) || 0;
 
-    await run(
+    run(
       'UPDATE docker_backups SET status = ?, size = ? WHERE id = ?',
       ['completed', fileSize, backupId]
     );
 
-    await logEvent('backup', 'info', `Backup completed for container ${containerId}`, {
+    logEvent('backup', 'info', `Backup completed for container ${containerId}`, {
       backupId,
       fileSize,
       path: backupPath
@@ -116,9 +116,9 @@ async function performBackup(
   } catch (error: any) {
     console.error('Backup execution error:', error);
 
-    await run('UPDATE docker_backups SET status = ? WHERE id = ?', ['failed', backupId]);
+    run('UPDATE docker_backups SET status = ? WHERE id = ?', ['failed', backupId]);
 
-    await logEvent('backup', 'error', `Backup failed for container ${containerId}`, {
+    logEvent('backup', 'error', `Backup failed for container ${containerId}`, {
       backupId,
       error: error.message
     }, userId);
@@ -133,7 +133,7 @@ async function performBackup(
 
 dockerRouter.get('/backups', async (req: AuthRequest, res) => {
   try {
-    const backups = await query(
+    const backups = query(
       'SELECT * FROM docker_backups ORDER BY created_at DESC LIMIT 50'
     );
     res.json({ backups });
@@ -176,12 +176,12 @@ dockerRouter.post('/containers/:containerId/restart', async (req: AuthRequest, r
 
     await execAsync(`docker restart ${containerId}`);
 
-    await logEvent('docker', 'info', `Container ${containerId} restarted`, { containerId }, req.userId!);
+    logEvent('docker', 'info', `Container ${containerId} restarted`, { containerId }, req.userId!);
 
     res.json({ message: 'Container restarted successfully' });
   } catch (error: any) {
     console.error('Error restarting container:', error);
-    await logEvent('docker', 'error', `Failed to restart container ${req.params.containerId}`, {
+    logEvent('docker', 'error', `Failed to restart container ${req.params.containerId}`, {
       error: error.message
     }, req.userId!);
     res.status(500).json({ error: 'Failed to restart container' });
@@ -194,12 +194,12 @@ dockerRouter.post('/containers/:containerId/pause', async (req: AuthRequest, res
 
     await execAsync(`docker pause ${containerId}`);
 
-    await logEvent('docker', 'info', `Container ${containerId} paused`, { containerId }, req.userId!);
+    logEvent('docker', 'info', `Container ${containerId} paused`, { containerId }, req.userId!);
 
     res.json({ message: 'Container paused successfully' });
   } catch (error: any) {
     console.error('Error pausing container:', error);
-    await logEvent('docker', 'error', `Failed to pause container ${req.params.containerId}`, {
+    logEvent('docker', 'error', `Failed to pause container ${req.params.containerId}`, {
       error: error.message
     }, req.userId!);
     res.status(500).json({ error: 'Failed to pause container' });
@@ -212,12 +212,12 @@ dockerRouter.post('/containers/:containerId/unpause', async (req: AuthRequest, r
 
     await execAsync(`docker unpause ${containerId}`);
 
-    await logEvent('docker', 'info', `Container ${containerId} unpaused`, { containerId }, req.userId!);
+    logEvent('docker', 'info', `Container ${containerId} unpaused`, { containerId }, req.userId!);
 
     res.json({ message: 'Container unpaused successfully' });
   } catch (error: any) {
     console.error('Error unpausing container:', error);
-    await logEvent('docker', 'error', `Failed to unpause container ${req.params.containerId}`, {
+    logEvent('docker', 'error', `Failed to unpause container ${req.params.containerId}`, {
       error: error.message
     }, req.userId!);
     res.status(500).json({ error: 'Failed to unpause container' });
@@ -230,12 +230,12 @@ dockerRouter.post('/containers/:containerId/start', async (req: AuthRequest, res
 
     await execAsync(`docker start ${containerId}`);
 
-    await logEvent('docker', 'info', `Container ${containerId} started`, { containerId }, req.userId!);
+    logEvent('docker', 'info', `Container ${containerId} started`, { containerId }, req.userId!);
 
     res.json({ message: 'Container started successfully' });
   } catch (error: any) {
     console.error('Error starting container:', error);
-    await logEvent('docker', 'error', `Failed to start container ${req.params.containerId}`, {
+    logEvent('docker', 'error', `Failed to start container ${req.params.containerId}`, {
       error: error.message
     }, req.userId!);
     res.status(500).json({ error: 'Failed to start container' });
@@ -248,12 +248,12 @@ dockerRouter.post('/containers/:containerId/stop', async (req: AuthRequest, res)
 
     await execAsync(`docker stop ${containerId}`);
 
-    await logEvent('docker', 'info', `Container ${containerId} stopped`, { containerId }, req.userId!);
+    logEvent('docker', 'info', `Container ${containerId} stopped`, { containerId }, req.userId!);
 
     res.json({ message: 'Container stopped successfully' });
   } catch (error: any) {
     console.error('Error stopping container:', error);
-    await logEvent('docker', 'error', `Failed to stop container ${req.params.containerId}`, {
+    logEvent('docker', 'error', `Failed to stop container ${req.params.containerId}`, {
       error: error.message
     }, req.userId!);
     res.status(500).json({ error: 'Failed to stop container' });

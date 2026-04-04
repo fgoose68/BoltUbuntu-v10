@@ -15,7 +15,7 @@ authRouter.post('/register', async (req, res) => {
       return res.status(400).json({ error: 'Email, password and name are required' });
     }
 
-    const existingUser = await get('SELECT id FROM users WHERE email = ?', [email]);
+    const existingUser = get('SELECT id FROM users WHERE email = ?', [email]);
 
     if (existingUser) {
       return res.status(400).json({ error: 'User already exists' });
@@ -24,12 +24,12 @@ authRouter.post('/register', async (req, res) => {
     const passwordHash = await bcrypt.hash(password, 10);
     const userId = randomUUID();
 
-    await run(
+    run(
       'INSERT INTO users (id, email, password, name) VALUES (?, ?, ?, ?)',
       [userId, email, passwordHash, name]
     );
 
-    await logEvent('login', 'info', 'User registered', { email }, userId);
+    logEvent('login', 'info', 'User registered', { email }, userId);
 
     const token = generateToken(userId, email);
 
@@ -55,7 +55,7 @@ authRouter.post('/login', async (req, res) => {
       return res.status(400).json({ error: 'Email and password are required' });
     }
 
-    const user = await get('SELECT * FROM users WHERE email = ?', [email]);
+    const user = get('SELECT * FROM users WHERE email = ?', [email]);
 
     if (!user) {
       return res.status(401).json({ error: 'Invalid credentials' });
@@ -67,7 +67,7 @@ authRouter.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    await logEvent('login', 'info', 'User logged in', { email }, user.id);
+    logEvent('login', 'info', 'User logged in', { email }, user.id);
 
     const token = generateToken(user.id, user.email);
 
@@ -99,7 +99,7 @@ authRouter.get('/me', async (req, res) => {
       return res.status(401).json({ error: 'Invalid token' });
     }
 
-    const user = await get(
+    const user = get(
       'SELECT id, email, name FROM users WHERE id = ?',
       [decoded.userId]
     );

@@ -58,7 +58,7 @@ metricsRouter.get('/current', async (req: AuthRequest, res) => {
     };
 
     const metricId = randomUUID();
-    await run(
+    run(
       'INSERT INTO metrics (id, cpu_usage, memory_usage, disk_usage, temperature, uptime) VALUES (?, ?, ?, ?, ?, ?)',
       [metricId, metrics.cpu.usage, metrics.ram.usage, metrics.disk.usage, metrics.temperature.cpu, 0]
     );
@@ -73,7 +73,7 @@ metricsRouter.get('/current', async (req: AuthRequest, res) => {
 metricsRouter.get('/history', async (req: AuthRequest, res) => {
   try {
     const hours = parseInt(req.query.hours as string) || 24;
-    const metrics = await query(
+    const metrics = query(
       'SELECT * FROM metrics WHERE timestamp >= datetime("now", ?) ORDER BY timestamp ASC',
       [`-${hours} hours`]
     );
@@ -87,7 +87,7 @@ metricsRouter.get('/history', async (req: AuthRequest, res) => {
 
 metricsRouter.get('/alerts', async (req: AuthRequest, res) => {
   try {
-    const thresholds = await query('SELECT * FROM alert_thresholds ORDER BY metric_name ASC');
+    const thresholds = query('SELECT * FROM alert_thresholds ORDER BY metric_name ASC');
     res.json({ thresholds });
   } catch (error) {
     console.error('Error fetching alert thresholds:', error);
@@ -120,7 +120,7 @@ metricsRouter.put('/alerts/:alertId', async (req: AuthRequest, res) => {
     updates.push('updated_at = CURRENT_TIMESTAMP');
     values.push(alertId);
 
-    await run(
+    run(
       `UPDATE alert_thresholds SET ${updates.join(', ')} WHERE id = ?`,
       values
     );

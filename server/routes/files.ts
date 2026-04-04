@@ -54,7 +54,7 @@ const upload = multer({
 
 filesRouter.get('/list', async (req: AuthRequest, res) => {
   try {
-    const files = await query('SELECT * FROM files ORDER BY created_at DESC');
+    const files = query('SELECT * FROM files ORDER BY created_at DESC');
     res.json({ files });
   } catch (error) {
     console.error('Error fetching files:', error);
@@ -85,12 +85,12 @@ filesRouter.post('/upload', upload.single('file'), async (req: AuthRequest, res)
 
     const fileId = randomUUID();
 
-    await run(
+    run(
       'INSERT INTO files (id, filename, file_type, file_size, storage_path, storage_location, mime_type, uploaded_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
       [fileId, req.file.originalname, path.extname(req.file.originalname).toLowerCase(), req.file.size, finalPath, storageLocation, req.file.mimetype, req.userId]
     );
 
-    await logEvent('upload', 'info', `File uploaded: ${req.file.originalname}`, {
+    logEvent('upload', 'info', `File uploaded: ${req.file.originalname}`, {
       fileId,
       size: req.file.size
     }, req.userId!);
@@ -118,7 +118,7 @@ filesRouter.get('/download/:fileId', async (req: AuthRequest, res) => {
   try {
     const { fileId } = req.params;
 
-    const file = await get('SELECT * FROM files WHERE id = ?', [fileId]);
+    const file = get('SELECT * FROM files WHERE id = ?', [fileId]);
 
     if (!file) {
       return res.status(404).json({ error: 'File not found' });
@@ -130,7 +130,7 @@ filesRouter.get('/download/:fileId', async (req: AuthRequest, res) => {
       return res.status(404).json({ error: 'File not found on disk' });
     }
 
-    await logEvent('download', 'info', `File downloaded: ${file.filename}`, {
+    logEvent('download', 'info', `File downloaded: ${file.filename}`, {
       fileId: file.id
     }, req.userId!);
 
@@ -145,7 +145,7 @@ filesRouter.delete('/:fileId', async (req: AuthRequest, res) => {
   try {
     const { fileId } = req.params;
 
-    const file = await get('SELECT * FROM files WHERE id = ?', [fileId]);
+    const file = get('SELECT * FROM files WHERE id = ?', [fileId]);
 
     if (!file) {
       return res.status(404).json({ error: 'File not found' });
@@ -153,9 +153,9 @@ filesRouter.delete('/:fileId', async (req: AuthRequest, res) => {
 
     await fs.unlink(file.storage_path).catch(() => {});
 
-    await run('DELETE FROM files WHERE id = ?', [fileId]);
+    run('DELETE FROM files WHERE id = ?', [fileId]);
 
-    await logEvent('upload', 'info', `File deleted: ${file.filename}`, {
+    logEvent('upload', 'info', `File deleted: ${file.filename}`, {
       fileId: file.id
     }, req.userId!);
 

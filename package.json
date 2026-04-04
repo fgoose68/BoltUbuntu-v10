@@ -12,8 +12,10 @@
     "server:dev": "tsx watch server/index.ts"
   },
   "dependencies": {
+    "@types/better-sqlite3": "^7.6.13",
     "axios": "^1.6.7",
     "bcryptjs": "^2.4.3",
+    "better-sqlite3": "^12.8.0",
     "chart.js": "^4.4.1",
     "date-fns": "^3.3.1",
     "duckdb": "^1.1.3",

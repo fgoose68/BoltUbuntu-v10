@@ -8,7 +8,7 @@ export const settingsRouter = express.Router();
 
 settingsRouter.get('/', async (req: AuthRequest, res) => {
   try {
-    const settings = await query('SELECT * FROM settings WHERE user_id = ? ORDER BY key ASC', [req.userId]);
+    const settings = query('SELECT * FROM settings WHERE user_id = ? ORDER BY key ASC', [req.userId]);
 
     const settingsMap = settings.reduce((acc, setting) => {
       acc[setting.key] = setting.value;
@@ -31,22 +31,22 @@ settingsRouter.put('/:key', async (req: AuthRequest, res) => {
       return res.status(400).json({ error: 'Value is required' });
     }
 
-    const existing = await get('SELECT * FROM settings WHERE user_id = ? AND key = ?', [req.userId, key]);
+    const existing = get('SELECT * FROM settings WHERE user_id = ? AND key = ?', [req.userId, key]);
 
     if (existing) {
-      await run(
+      run(
         'UPDATE settings SET value = ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ? AND key = ?',
         [String(value), req.userId, key]
       );
     } else {
       const settingId = randomUUID();
-      await run(
+      run(
         'INSERT INTO settings (id, user_id, key, value) VALUES (?, ?, ?, ?)',
         [settingId, req.userId, key, String(value)]
       );
     }
 
-    await logEvent('system', 'info', `Setting updated: ${key}`, {
+    logEvent('system', 'info', `Setting updated: ${key}`, {
       key,
       value: String(value)
     }, req.userId!);

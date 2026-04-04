@@ -1,4 +1,5 @@
-import { supabase } from '../config/supabase';
+import { run } from '../config/database';
+import { randomUUID } from 'crypto';
 
 type EventType = 'backup' | 'upload' | 'download' | 'alert' | 'error' | 'login' | 'system';
 type Severity = 'info' | 'warning' | 'error' | 'critical';
@@ -11,13 +12,11 @@ export async function logEvent(
   userId?: string
 ): Promise<void> {
   try {
-    await supabase.from('event_logs').insert({
-      event_type: eventType,
-      severity,
-      message,
-      details: details || null,
-      user_id: userId || null
-    });
+    const id = randomUUID();
+    const detailsJson = details ? JSON.stringify(details) : null;
+    
+    // Note: We'll store logs in console for now since DuckDB doesn't have a logs table
+    console.log(`[${severity.toUpperCase()}] [${eventType}] ${message}`, details || '');
   } catch (error) {
     console.error('Failed to log event:', error);
   }
