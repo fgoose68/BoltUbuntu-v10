@@ -39,39 +39,12 @@ export function DockerBackups() {
         api.getContainers(),
         api.getBackups(),
       ]);
-      setContainers(containersData.containers);
-      setBackups(backupsData.backups);
+      setContainers(containersData.containers || []);
+      setBackups(backupsData.backups || []);
     } catch (err) {
-      // Use demo data if API fails
-      setContainers([
-        { id: '1', name: 'nextcloud', image: 'nextcloud:latest', status: 'running', state: 'running' },
-        { id: '2', name: 'mariadb', image: 'mariadb:10.5', status: 'running', state: 'running' },
-        { id: '3', name: 'nginx-proxy', image: 'nginx:alpine', status: 'running', state: 'running' },
-      ]);
-      setBackups([
-        {
-          id: '1',
-          backup_type: 'export',
-          file_path: '/backups/nextcloud_20260328.tar',
-          file_size: 2147483648,
-          destination: 'nas',
-          status: 'completed',
-          created_at: new Date(Date.now() - 3600000).toISOString(),
-          completed_at: new Date(Date.now() - 3000000).toISOString(),
-          container: { name: 'nextcloud', image: 'nextcloud:latest' }
-        },
-        {
-          id: '2',
-          backup_type: 'export',
-          file_path: '/backups/mariadb_20260327.tar',
-          file_size: 524288000,
-          destination: 'local',
-          status: 'completed',
-          created_at: new Date(Date.now() - 86400000).toISOString(),
-          completed_at: new Date(Date.now() - 86000000).toISOString(),
-          container: { name: 'mariadb', image: 'mariadb:10.5' }
-        }
-      ]);
+      console.error('Error loading data:', err);
+      setContainers([]);
+      setBackups([]);
     } finally {
       setLoading(false);
     }
@@ -80,27 +53,13 @@ export function DockerBackups() {
   const handleBackup = async (containerId: string, destination: string = 'local') => {
     setBackingUp(containerId);
     try {
-      await api.backupContainer(containerId, destination, 'export');
+      const container = containers.find(c => c.id === containerId);
+      await api.backupContainer(containerId, destination, 'export', container?.name || 'unknown');
       alert('Backup started successfully');
       setTimeout(loadData, 2000);
     } catch (err: any) {
-      // Demo mode: simulate backup creation
-      const container = containers.find(c => c.id === containerId);
-      if (container) {
-        const newBackup: Backup = {
-          id: String(Date.now()),
-          backup_type: 'export',
-          file_path: `/backups/${container.name}_${new Date().toISOString().split('T')[0].replace(/-/g, '')}.tar`,
-          file_size: Math.floor(Math.random() * 2000000000) + 500000000,
-          destination: destination,
-          status: 'completed',
-          created_at: new Date().toISOString(),
-          completed_at: new Date(Date.now() + 5000).toISOString(),
-          container: { name: container.name, image: container.image }
-        };
-        setBackups(prev => [newBackup, ...prev]);
-        alert('Backup started successfully (demo mode)');
-      }
+      console.error('Backup error:', err);
+      alert('Error starting backup: ' + (err.message || 'Unknown error'));
     } finally {
       setBackingUp(null);
     }

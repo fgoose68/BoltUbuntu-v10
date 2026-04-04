@@ -22,56 +22,31 @@ export function Settings() {
   const loadPushoverConfig = async () => {
     try {
       const data = await api.getPushoverConfig();
-      setPushoverConfigured(data.configured);
-      setPushoverEnabled(data.enabled);
+      setPushoverConfigured(data.configured || false);
+      setPushoverEnabled(data.enabled || false);
     } catch (err) {
-      // Use demo data
+      console.error('Error loading Pushover config:', err);
       setPushoverConfigured(false);
-      setPushoverEnabled(true);
+      setPushoverEnabled(false);
     }
   };
 
   const loadLogs = async () => {
     try {
       const data = await api.getLogs(50);
-      setLogs(data.logs);
+      setLogs(data.logs || []);
     } catch (err) {
-      // Use demo data
-      setLogs([
-        {
-          id: '1',
-          severity: 'info',
-          event_type: 'backup.completed',
-          message: 'Docker container nextcloud backed up successfully to NAS',
-          created_at: new Date(Date.now() - 1800000).toISOString(),
-          user: { name: 'Demo User' }
-        },
-        {
-          id: '2',
-          severity: 'warning',
-          event_type: 'system.high_cpu',
-          message: 'CPU usage exceeded 80% threshold',
-          created_at: new Date(Date.now() - 7200000).toISOString(),
-          user: null
-        },
-        {
-          id: '3',
-          severity: 'info',
-          event_type: 'file.uploaded',
-          message: 'File Budget_2026.xlsx uploaded to local storage',
-          created_at: new Date(Date.now() - 172800000).toISOString(),
-          user: { name: 'Demo User' }
-        }
-      ]);
+      console.error('Error loading logs:', err);
+      setLogs([]);
     }
   };
 
   const loadThresholds = async () => {
     try {
       const data = await api.getAlertThresholds();
-      setThresholds(data.thresholds);
+      setThresholds(data.thresholds || []);
     } catch (err) {
-      // Use demo data
+      console.error('Error loading thresholds:', err);
       setThresholds([
         { id: '1', metric_name: 'cpu', threshold_value: 80, comparison: 'gt', enabled: true },
         { id: '2', metric_name: 'ram', threshold_value: 85, comparison: 'gt', enabled: true },
@@ -95,11 +70,8 @@ export function Settings() {
       setPushoverUserKey('');
       setPushoverApiToken('');
     } catch (err: any) {
-      // Demo mode: simulate save
-      setPushoverConfigured(true);
-      setPushoverUserKey('');
-      setPushoverApiToken('');
-      alert('Pushover configuration saved successfully (demo mode)');
+      console.error('Error saving Pushover config:', err);
+      alert('Error saving configuration: ' + (err.message || 'Unknown error'));
     } finally {
       setSaving(false);
     }
@@ -110,8 +82,8 @@ export function Settings() {
       await api.sendTestNotification();
       alert('Test notification sent successfully');
     } catch (err: any) {
-      // Demo mode: simulate notification
-      alert('Test notification sent successfully (demo mode)');
+      console.error('Error sending test notification:', err);
+      alert('Error: ' + (err.message || 'Could not send notification'));
     }
   };
 
@@ -120,7 +92,8 @@ export function Settings() {
       await api.updateAlertThreshold(alertId, { threshold_value: value, enabled });
       await loadThresholds();
     } catch (err: any) {
-      // Update local state in demo mode
+      console.error('Error updating threshold:', err);
+      // Update local state as fallback
       setThresholds(prev =>
         prev.map(t =>
           t.id === alertId

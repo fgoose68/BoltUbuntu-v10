@@ -33,57 +33,12 @@ export function DockerContainers() {
 
     try {
       const data = await api.getDockerContainers();
-      setContainers(data.containers);
+      setContainers(data.containers || []);
       setError('');
     } catch (err: any) {
-      setContainers([
-        {
-          id: 'abc123',
-          name: 'web-server',
-          image: 'nginx:latest',
-          state: 'running',
-          status: 'Up 2 hours',
-          created: '2024-01-15',
-          ports: ['80:80', '443:443']
-        },
-        {
-          id: 'def456',
-          name: 'database',
-          image: 'postgres:15',
-          state: 'running',
-          status: 'Up 5 days',
-          created: '2024-01-10',
-          ports: ['5432:5432']
-        },
-        {
-          id: 'ghi789',
-          name: 'redis-cache',
-          image: 'redis:alpine',
-          state: 'exited',
-          status: 'Exited (0) 1 hour ago',
-          created: '2024-01-12',
-          ports: []
-        },
-        {
-          id: 'jkl012',
-          name: 'app-worker',
-          image: 'node:18',
-          state: 'created',
-          status: 'Created',
-          created: '2024-01-16',
-          ports: []
-        },
-        {
-          id: 'mno345',
-          name: 'monitoring',
-          image: 'grafana/grafana:latest',
-          state: 'restarting',
-          status: 'Restarting (1) Less than a second ago',
-          created: '2024-01-14',
-          ports: ['3000:3000']
-        }
-      ]);
-      setError('');
+      console.error('Error fetching containers:', err);
+      setContainers([]);
+      setError('Unable to fetch containers');
     } finally {
       setLoading(false);
       if (isManualRefresh) {
@@ -118,41 +73,8 @@ export function DockerContainers() {
       }
       await fetchContainers();
     } catch (err: any) {
-      // Demo mode: simulate state change
-      setContainers(prevContainers =>
-        prevContainers.map(container => {
-          if (container.id === containerId) {
-            let newState = container.state;
-            let newStatus = container.status;
-
-            switch (action) {
-              case 'start':
-                newState = 'running';
-                newStatus = 'Up a few seconds';
-                break;
-              case 'stop':
-                newState = 'exited';
-                newStatus = 'Exited (0) a few seconds ago';
-                break;
-              case 'restart':
-                newState = 'running';
-                newStatus = 'Up a few seconds';
-                break;
-              case 'pause':
-                newState = 'paused';
-                newStatus = 'Paused';
-                break;
-              case 'unpause':
-                newState = 'running';
-                newStatus = 'Up a few seconds';
-                break;
-            }
-
-            return { ...container, state: newState, status: newStatus };
-          }
-          return container;
-        })
-      );
+      console.error('Container action error:', err);
+      alert('Error performing action: ' + (err.message || 'Unknown error'));
     } finally {
       setActionLoading(null);
     }

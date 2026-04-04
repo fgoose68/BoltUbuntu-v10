@@ -28,25 +28,8 @@ export function SystemMetrics() {
       setMetrics(data.metrics);
       setError('');
     } catch (err: any) {
-      // Use demo data if API fails
-      setMetrics({
-        cpu: { usage: parseFloat((45.3 + Math.random() * 10).toFixed(2)), cores: 4 },
-        ram: {
-          total: 4096,
-          used: parseFloat((2048 + Math.random() * 500).toFixed(2)),
-          free: 2048,
-          usage: parseFloat((52.5 + Math.random() * 5).toFixed(2))
-        },
-        disk: {
-          total: 64,
-          used: parseFloat((32 + Math.random() * 5).toFixed(2)),
-          free: 32,
-          usage: parseFloat((51.2 + Math.random() * 3).toFixed(2))
-        },
-        temperature: { cpu: parseFloat((48.5 + Math.random() * 5).toFixed(2)) },
-        network: { ipLocal: '192.168.1.100', ipPublic: '203.0.113.42', interface: 'eth0' }
-      });
-      setError('');
+      console.error('Error fetching metrics:', err);
+      setError('Unable to fetch system metrics');
     } finally {
       setLoading(false);
     }

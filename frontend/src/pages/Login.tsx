@@ -10,7 +10,7 @@ export function Login() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const { login, register, setUser } = useAuth();
+  const { login, register } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -32,16 +32,6 @@ export function Login() {
     }
   };
 
-  const handleDemoLogin = () => {
-    setUser({
-      id: 'demo-user',
-      email: 'demo@example.com',
-      name: 'Demo User',
-      role: 'admin'
-    });
-    navigate('/');
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
       <div className="max-w-md w-full bg-slate-800 rounded-2xl shadow-2xl border border-slate-700 p-8 relative">
@@ -52,22 +42,6 @@ export function Login() {
           <p className="text-slate-400">
             {isRegistering ? 'Create your account' : 'Sign in to continue'}
           </p>
-        </div>
-
-        <button
-          onClick={handleDemoLogin}
-          className="w-full mb-6 py-3 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors duration-200"
-        >
-          Demo Mode (No Backend Required)
-        </button>
-
-        <div className="relative mb-6">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-slate-600"></div>
-          </div>
-          <div className="relative flex justify-center text-sm">
-            <span className="px-2 bg-slate-800 text-slate-400">Or use credentials</span>
-          </div>
         </div>
 
         {error && (
@@ -149,7 +123,7 @@ export function Login() {
         </div>
 
         <div className="absolute bottom-4 right-6 text-slate-500 text-xs font-medium">
-          Ver2.0Mar2026
+          Ver.2.4Mar2026
         </div>
       </div>
     </div>
