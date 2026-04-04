@@ -29,38 +29,10 @@ export function FileManager() {
   const loadFiles = async () => {
     try {
       const data = await api.getFiles();
-      setFiles(data.files);
+      setFiles(data.files || []);
     } catch (err) {
-      // Use demo data if API fails
-      setFiles([
-        {
-          id: '1',
-          filename: 'Project_Report.docx',
-          file_type: '.docx',
-          file_size: 1048576,
-          storage_location: 'nas',
-          uploaded_at: new Date(Date.now() - 7200000).toISOString(),
-          uploader: { name: 'Demo User' }
-        },
-        {
-          id: '2',
-          filename: 'Budget_2026.xlsx',
-          file_type: '.xlsx',
-          file_size: 524288,
-          storage_location: 'local',
-          uploaded_at: new Date(Date.now() - 172800000).toISOString(),
-          uploader: { name: 'Demo User' }
-        },
-        {
-          id: '3',
-          filename: 'Presentation.pptx',
-          file_type: '.pptx',
-          file_size: 2097152,
-          storage_location: 'nas',
-          uploaded_at: new Date(Date.now() - 259200000).toISOString(),
-          uploader: { name: 'Demo User' }
-        }
-      ]);
+      console.error('Error loading files:', err);
+      setFiles([]);
     } finally {
       setLoading(false);
     }
@@ -82,19 +54,8 @@ export function FileManager() {
       setSelectedFile(null);
       await loadFiles();
     } catch (err: any) {
-      // Demo mode: simulate file upload
-      const newFile: OfficeFile = {
-        id: String(Date.now()),
-        filename: selectedFile.name,
-        file_type: selectedFile.name.substring(selectedFile.name.lastIndexOf('.')),
-        file_size: selectedFile.size,
-        storage_location: destination,
-        uploaded_at: new Date().toISOString(),
-        uploader: { name: 'Demo User' }
-      };
-      setFiles(prev => [newFile, ...prev]);
-      setSelectedFile(null);
-      alert('File uploaded successfully (demo mode)');
+      console.error('Upload error:', err);
+      alert('Error uploading file: ' + (err.message || 'Unknown error'));
     } finally {
       setUploading(false);
     }
@@ -103,31 +64,40 @@ export function FileManager() {
   const handleDownload = async (fileId: string, filename: string) => {
     try {
       const blob = await api.downloadFile(fileId);
+      
+      // Create download link
       const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      link.style.display = 'none';
+      
+      // Append to body, click, and cleanup
+      document.body.appendChild(link);
+      link.click();
+      
+      // Cleanup after a delay to ensure download starts
+      setTimeout(() => {
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      }, 100);
+      
     } catch (err: any) {
-      // Demo mode: show message
-      alert('Download not available in demo mode');
+      console.error('Download error:', err);
+      alert('Error downloading file: ' + (err.message || 'Unknown error'));
     }
   };
 
   const handleDelete = async (fileId: string) => {
-    if (!confirm('Are you sure you want to delete this file?')) return;
+    if (!window.confirm('Are you sure you want to delete this file?')) return;
 
     try {
       await api.deleteFile(fileId);
       alert('File deleted successfully');
       await loadFiles();
     } catch (err: any) {
-      // Demo mode: remove from local state
-      setFiles(prev => prev.filter(f => f.id !== fileId));
-      alert('File deleted successfully (demo mode)');
+      console.error('Delete error:', err);
+      alert('Error deleting file: ' + (err.message || 'Unknown error'));
     }
   };
 
@@ -136,136 +106,130 @@ export function FileManager() {
     const k = 1024;
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
   const formatDate = (dateString: string) => {
+    if (!dateString) return 'N/A';
     return new Date(dateString).toLocaleString();
   };
 
   const getFileIcon = (fileType: string) => {
-    if (fileType.includes('word') || fileType === '.docx' || fileType === '.doc') return '📝';
-    if (fileType.includes('sheet') || fileType === '.xlsx' || fileType === '.xls') return '📊';
-    if (fileType.includes('presentation') || fileType === '.pptx' || fileType === '.ppt') return '📽️';
-    if (fileType === '.pdf') return '📄';
-    return '📁';
+    switch (fileType.toLowerCase()) {
+      case '.docx':
+      case '.doc':
+        return '📄';
+      case '.xlsx':
+      case '.xls':
+        return '📊';
+      case '.pptx':
+      case '.ppt':
+        return '📽️';
+      case '.pdf':
+        return '📕';
+      default:
+        return '📁';
+    }
   };
 
-  if (loading) {
-    return <div className={`transition-colors duration-300 ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>Loading files...</div>;
-  }
+  const cardBg = theme === 'dark' ? 'bg-gray-800' : 'bg-white';
+  const textColor = theme === 'dark' ? 'text-gray-100' : 'text-gray-900';
+  const mutedText = theme === 'dark' ? 'text-gray-400' : 'text-gray-600';
+  const borderColor = theme === 'dark' ? 'border-gray-700' : 'border-gray-200';
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className={`text-2xl font-bold mb-4 transition-colors duration-300 ${
-          theme === 'dark' ? 'text-white' : 'text-slate-900'
-        }`}>Upload Office File</h2>
-        <div className={`rounded-lg p-6 border transition-colors duration-300 ${
-          theme === 'dark'
-            ? 'bg-slate-700/50 border-slate-600'
-            : 'bg-white border-slate-200'
-        }`}>
-          <div className="space-y-4">
-            <div>
-              <label className={`block text-sm font-medium mb-2 transition-colors duration-300 ${
-                theme === 'dark' ? 'text-slate-300' : 'text-slate-700'
-              }`}>
-                Select File
-              </label>
-              <input
-                type="file"
-                onChange={handleFileSelect}
-                accept=".doc,.docx,.xls,.xlsx,.ppt,.pptx,.pdf"
-                className={`block w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer transition-colors duration-300 ${
-                  theme === 'dark' ? 'text-slate-300' : 'text-slate-700'
-                }`}
-              />
-            </div>
-
-            <div>
-              <label className={`block text-sm font-medium mb-2 transition-colors duration-300 ${
-                theme === 'dark' ? 'text-slate-300' : 'text-slate-700'
-              }`}>
-                Destination
-              </label>
-              <div className="flex gap-4">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="destination"
-                    value="local"
-                    checked={destination === 'local'}
-                    onChange={(e) => setDestination(e.target.value as 'local' | 'nas')}
-                    className="text-blue-600"
-                  />
-                  <span className={`transition-colors duration-300 ${
-                    theme === 'dark' ? 'text-slate-300' : 'text-slate-700'
-                  }`}>Local Storage</span>
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="destination"
-                    value="nas"
-                    checked={destination === 'nas'}
-                    onChange={(e) => setDestination(e.target.value as 'local' | 'nas')}
-                    className="text-blue-600"
-                  />
-                  <span className={`transition-colors duration-300 ${
-                    theme === 'dark' ? 'text-slate-300' : 'text-slate-700'
-                  }`}>NAS</span>
-                </label>
-              </div>
-            </div>
-
-            <button
-              onClick={handleUpload}
-              disabled={!selectedFile || uploading}
-              className="w-full py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 text-white font-medium rounded-lg transition-colors duration-300"
-            >
-              {uploading ? 'Uploading...' : 'Upload File'}
-            </button>
+      {/* Upload Section */}
+      <div className={`${cardBg} rounded-xl p-6 border ${borderColor}`}>
+        <h3 className={`text-lg font-semibold ${textColor} mb-4`}>Upload Office File</h3>
+        
+        <div className="space-y-4">
+          <div>
+            <label className={`block text-sm font-medium ${mutedText} mb-2`}>
+              Select File
+            </label>
+            <input
+              type="file"
+              accept=".docx,.xlsx,.pptx,.doc,.xls,.ppt,.pdf"
+              onChange={handleFileSelect}
+              className={`block w-full text-sm ${mutedText} file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700 file:cursor-pointer`}
+            />
           </div>
+          
+          <div>
+            <label className={`block text-sm font-medium ${mutedText} mb-2`}>
+              Destination
+            </label>
+            <div className="flex space-x-4">
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="destination"
+                  value="local"
+                  checked={destination === 'local'}
+                  onChange={() => setDestination('local')}
+                  className="mr-2"
+                />
+                <span className={mutedText}>Local Storage</span>
+              </label>
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="destination"
+                  value="nas"
+                  checked={destination === 'nas'}
+                  onChange={() => setDestination('nas')}
+                  className="mr-2"
+                />
+                <span className={mutedText}>NAS</span>
+              </label>
+            </div>
+          </div>
+          
+          <button
+            onClick={handleUpload}
+            disabled={!selectedFile || uploading}
+            className={`w-full py-3 rounded-lg font-medium transition-colors duration-300 ${
+              selectedFile && !uploading
+                ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                : 'bg-gray-600 text-gray-400 cursor-not-allowed'
+            }`}
+          >
+            {uploading ? 'Uploading...' : 'Upload File'}
+          </button>
         </div>
       </div>
 
-      <div>
-        <h2 className={`text-2xl font-bold mb-4 transition-colors duration-300 ${
-          theme === 'dark' ? 'text-white' : 'text-slate-900'
-        }`}>Files</h2>
-        <div className="space-y-3">
-          {files.length === 0 ? (
-            <div className={`text-center py-8 transition-colors duration-300 ${
-              theme === 'dark' ? 'text-slate-400' : 'text-slate-600'
-            }`}>No files uploaded yet</div>
-          ) : (
-            files.map((file) => (
+      {/* Files List */}
+      <div className={`${cardBg} rounded-xl p-6 border ${borderColor}`}>
+        <h3 className={`text-lg font-semibold ${textColor} mb-4`}>Files</h3>
+        
+        {loading ? (
+          <div className={`text-center py-8 ${mutedText}`}>Loading files...</div>
+        ) : files.length === 0 ? (
+          <div className={`text-center py-8 ${mutedText}`}>No files uploaded yet</div>
+        ) : (
+          <div className="space-y-3">
+            {files.map((file) => (
               <div
                 key={file.id}
-                className={`rounded-lg p-4 border flex items-center justify-between transition-colors duration-300 ${
-                  theme === 'dark'
-                    ? 'bg-slate-700/50 border-slate-600'
-                    : 'bg-white border-slate-200'
-                }`}
+                className={`flex items-center justify-between p-4 rounded-lg border ${borderColor} hover:border-blue-500 transition-colors duration-300`}
               >
-                <div className="flex items-center gap-4 flex-1">
+                <div className="flex items-center space-x-4">
                   <span className="text-3xl">{getFileIcon(file.file_type)}</span>
-                  <div className="flex-1">
-                    <h3 className={`font-medium transition-colors duration-300 ${
-                      theme === 'dark' ? 'text-white' : 'text-slate-900'
-                    }`}>{file.filename}</h3>
-                    <div className={`text-sm space-y-1 transition-colors duration-300 ${
-                      theme === 'dark' ? 'text-slate-400' : 'text-slate-600'
-                    }`}>
-                      <div>Size: {formatBytes(file.file_size)}</div>
-                      <div>Location: {file.storage_location}</div>
+                  <div>
+                    <div className={`font-medium ${textColor}`}>{file.filename}</div>
+                    <div className={`text-sm ${mutedText}`}>
+                      Size: {formatBytes(file.file_size)} | Location: {file.storage_location}
+                    </div>
+                    <div className={`text-xs ${mutedText}`}>
                       <div>Uploaded: {formatDate(file.uploaded_at || file.created_at || '')}</div>
                       <div>By: {file.uploader?.name || file.uploaded_by || 'Unknown'}</div>
                     </div>
                   </div>
                 </div>
-                <div className="flex gap-2">
+                
+                <div className="flex space-x-2">
                   <button
                     onClick={() => handleDownload(file.id, file.filename)}
                     className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm transition-colors duration-300"
@@ -280,9 +244,9 @@ export function FileManager() {
                   </button>
                 </div>
               </div>
-            ))
-          )}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
