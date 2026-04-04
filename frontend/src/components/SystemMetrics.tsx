@@ -115,8 +115,8 @@ export function SystemMetrics() {
           />
           <MetricCard
             title="RAM"
-            value={metrics.ram.used.toFixed(2)}
-            unit={`MB / ${metrics.ram.total} MB`}
+            value={(metrics.ram.used / 1024).toFixed(2)}
+            unit={`GB / ${(metrics.ram.total / 1024).toFixed(2)} GB`}
             usage={metrics.ram.usage}
             icon="🧠"
           />
