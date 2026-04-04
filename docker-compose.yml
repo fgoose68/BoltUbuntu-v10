@@ -2,9 +2,7 @@ version: '3.8'
 
 services:
   backend:
-    build: 
-      context: ./backend
-      dockerfile: Dockerfile
+    build: ./backend
     container_name: dashboard-backend
     ports:
       - "8001:8001"
@@ -16,24 +14,17 @@ services:
     environment:
       - JWT_SECRET=raspberry_dashboard_secret_key_2024
     restart: unless-stopped
-    networks:
-      - dashboard-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
+    build: ./frontend
     container_name: dashboard-frontend
     ports:
       - "3050:3050"
-    environment:
-      - VITE_API_URL=http://localhost:8001/api
     depends_on:
       - backend
     restart: unless-stopped
-    networks:
-      - dashboard-network
-
-networks:
-  dashboard-network:
-    driver: bridge

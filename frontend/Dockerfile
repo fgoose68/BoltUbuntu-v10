@@ -1,23 +1,22 @@
-FROM node:20-slim
+FROM node:20-alpine
 
 WORKDIR /app
 
 # Copy package files
-COPY package.json yarn.lock* ./
+COPY package.json ./
 
 # Install dependencies
-RUN yarn install --frozen-lockfile || yarn install
+RUN npm install
 
-# Copy application code
+# Copy all source code
 COPY . .
 
-# Build for production
-RUN yarn build
+# Build
+RUN npm run build
 
-# Install serve for production
-RUN yarn global add serve
+# Install serve globally
+RUN npm install -g serve
 
 EXPOSE 3050
 
-# Serve the built application
 CMD ["serve", "-s", "dist", "-l", "3050"]
