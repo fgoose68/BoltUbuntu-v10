@@ -1,48 +1,38 @@
 version: '3.8'
 
 services:
-  dashboard:
-    build: .
-    container_name: raspberry-dashboard
+  backend:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: dashboard-backend
     ports:
-      - "3050:3050"
+      - "8001:8001"
+    volumes:
+      - ./data:/app/data
+      - ./backups:/app/backups
+      - ./uploads:/app/uploads
+      - /var/run/docker.sock:/var/run/docker.sock
     environment:
-      - NODE_ENV=production
-      - BACKEND_PORT=3050
-      - VITE_SUPABASE_URL=${VITE_SUPABASE_URL}
-      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
-      - JWT_SECRET=${JWT_SECRET:-change-this-secret-in-production}
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ./backups:/backups
-      - ./uploads:/uploads
-      - nas-mount:/mnt/nas
+      - JWT_SECRET=raspberry_dashboard_secret_key_2024
     restart: unless-stopped
     networks:
       - dashboard-network
 
-  nginx:
-    image: nginx:alpine
-    container_name: dashboard-nginx
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: dashboard-frontend
     ports:
-      - "3051:80"
-      - "3052:443"
-    volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./ssl:/etc/nginx/ssl:ro
+      - "3000:3000"
+    environment:
+      - VITE_API_URL=http://localhost:8001/api
     depends_on:
-      - dashboard
+      - backend
     restart: unless-stopped
     networks:
       - dashboard-network
-
-volumes:
-  nas-mount:
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: /mnt/nas
 
 networks:
   dashboard-network:
