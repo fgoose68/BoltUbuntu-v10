@@ -2,21 +2,23 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# Copy package files
+# Copia package.json
 COPY package.json ./
 
-# Install dependencies
+# Installa dipendenze
 RUN npm install
 
-# Copy all source code
-COPY . .
+# Copia configurazioni
+COPY vite.config.ts ./
+COPY tsconfig*.json ./
+COPY tailwind.config.js ./
+COPY postcss.config.js ./
+COPY index.html ./
 
-# Build
-RUN npm run build
-
-# Install serve globally
-RUN npm install -g serve
+# Copia codice sorgente
+COPY public ./public
+COPY src ./src
 
 EXPOSE 3050
 
-CMD ["serve", "-s", "dist", "-l", "3050"]
+CMD ["npm", "run", "start"]
