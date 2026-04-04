@@ -25,7 +25,7 @@ services:
       dockerfile: Dockerfile
     container_name: dashboard-frontend
     ports:
-      - "3000:3000"
+      - "3050:3050"
     environment:
       - VITE_API_URL=http://localhost:8001/api
     depends_on:

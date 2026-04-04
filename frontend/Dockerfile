@@ -17,7 +17,7 @@ RUN yarn build
 # Install serve for production
 RUN yarn global add serve
 
-EXPOSE 3000
+EXPOSE 3050
 
 # Serve the built application
-CMD ["serve", "-s", "dist", "-l", "3000"]
+CMD ["serve", "-s", "dist", "-l", "3050"]
