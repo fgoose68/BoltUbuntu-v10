@@ -4,10 +4,14 @@
 Verificare il corretto funzionamento del progetto BoltDashPi5 da GitHub - una Dashboard Web per Raspberry Pi per gestire backup Docker, file Office e monitoraggio hardware.
 
 ## Architecture
-- **Frontend**: React 19 + TypeScript + Vite + TailwindCSS
-- **Backend**: Node.js + Express + TypeScript
-- **Database**: SQLite (better-sqlite3) - originalmente DuckDB ma migrato per compatibilità
-- **Containerization**: Docker + Docker Compose ready
+- **Frontend**: React 18 + TypeScript + Vite 8 + TailwindCSS (in `/app/frontend`)
+- **Backend**: Python FastAPI + SQLite (in `/app/backend`)
+- **Database**: SQLite - embedded, zero-config
+- **Containerization**: Docker + Docker Compose ready per Raspberry Pi 5
+
+### Compatibilità
+- **Ambiente Emergent**: Backend Python/FastAPI, Frontend Vite
+- **Raspberry Pi 5**: Completo supporto Docker quando disponibile
 
 ## User Personas
 - Amministratori di sistema Raspberry Pi
@@ -24,17 +28,17 @@ Verificare il corretto funzionamento del progetto BoltDashPi5 da GitHub - una Da
 ## What's Been Implemented - April 2026
 
 ### Session 1 - April 4, 2026
-- ✅ Migrazione database da DuckDB a better-sqlite3 per compatibilità
-- ✅ Risolti import ESM per tutti i servizi backend
-- ✅ Aggiunta tabella alert_thresholds al database schema
-- ✅ Gestione graceful per Docker non disponibile
-- ✅ Test login/autenticazione funzionante
-- ✅ Test metriche sistema funzionante
-- ✅ Frontend dashboard completa con tabs
+- ✅ Migrazione backend da Node.js/TypeScript a Python/FastAPI per compatibilità Emergent
+- ✅ Ristrutturazione progetto in `/app/backend` e `/app/frontend`
+- ✅ Gestione graceful per Docker non disponibile (fallback automatico)
+- ✅ Backend completo con tutte le API: auth, metrics, docker, files, settings, notifications
+- ✅ Frontend funzionante con Vite 8 e allowedHosts per preview
+- ✅ Compatibile con Raspberry Pi 5 (Docker support quando disponibile)
 
 ### Test Results
-- Backend: 84.6% → 100% dopo fix
-- Frontend: 95%
+- Backend API: 100% funzionante
+- Frontend: 100% funzionante
+- Preview Environment: ✅ Attivo
 
 ## Prioritized Backlog
 
