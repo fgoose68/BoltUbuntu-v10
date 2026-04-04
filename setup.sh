@@ -9,6 +9,12 @@ echo "=========================================="
 echo "📁 Creazione cartelle..."
 mkdir -p data backups uploads
 
+# Crea file .env se non esiste
+if [ ! -f "backend/.env" ]; then
+    echo "📝 Creazione file .env backend..."
+    echo "JWT_SECRET=raspberry_dashboard_secret_key_2024" > backend/.env
+fi
+
 # Verifica Docker
 echo "🐳 Verifica Docker..."
 if ! command -v docker &> /dev/null; then
@@ -23,8 +29,12 @@ fi
 
 echo "✅ Docker trovato"
 
+# Ferma eventuali container precedenti
+echo "🛑 Pulizia container precedenti..."
+docker-compose down 2>/dev/null
+
 # Avvia i container
-echo "🚀 Avvio container..."
+echo "🚀 Avvio container (build)..."
 docker-compose up -d --build
 
 # Attendi avvio
@@ -36,13 +46,14 @@ echo "📊 Stato servizi:"
 docker-compose ps
 
 # Mostra info accesso
+LOCAL_IP=$(hostname -I | awk '{print $1}')
 echo ""
 echo "=========================================="
 echo "  ✅ INSTALLAZIONE COMPLETATA!"
 echo "=========================================="
 echo ""
 echo "  🌐 Accedi alla dashboard:"
-echo "     http://$(hostname -I | awk '{print $1}'):3050"
+echo "     http://${LOCAL_IP}:3050"
 echo ""
 echo "  👤 Credenziali:"
 echo "     Email:    admin@dashboard.local"
