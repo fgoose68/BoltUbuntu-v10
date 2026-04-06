@@ -48,11 +48,13 @@ def is_docker_available():
     try:
         result = subprocess.run(["docker", "version"], capture_output=True, timeout=5)
         return result.returncode == 0
-    except:
+    except Exception as e:
+        print(f"Docker check error: {e}")
         return False
 
+# Check Docker at startup
 DOCKER_AVAILABLE = is_docker_available()
-print(f"Docker available: {DOCKER_AVAILABLE}")
+print(f"Docker available at startup: {DOCKER_AVAILABLE}")
 
 # Database
 def get_db():
@@ -418,8 +420,8 @@ def get_metrics_history(hours: int = 24, payload: dict = Depends(verify_token)):
 # Routes - Docker
 @app.get("/api/docker/containers")
 def get_containers(payload: dict = Depends(verify_token)):
-    if not DOCKER_AVAILABLE:
-        return {"containers": [], "dockerAvailable": False}
+    if not is_docker_available():
+        return {"containers": [], "dockerAvailable": False, "error": "Docker not available"}
     
     try:
         result = subprocess.run(
@@ -449,8 +451,8 @@ def get_containers(payload: dict = Depends(verify_token)):
 
 @app.get("/api/docker/containers/status")
 def get_containers_status(payload: dict = Depends(verify_token)):
-    if not DOCKER_AVAILABLE:
-        return {"containers": [], "dockerAvailable": False}
+    if not is_docker_available():
+        return {"containers": [], "dockerAvailable": False, "error": "Docker not available"}
     
     try:
         result = subprocess.run(
@@ -479,8 +481,22 @@ def get_containers_status(payload: dict = Depends(verify_token)):
 
 @app.post("/api/docker/backup/{container_id}")
 async def backup_container(container_id: str, req: BackupRequest, payload: dict = Depends(verify_token)):
-    if not DOCKER_AVAILABLE:
-        raise HTTPException(status_code=503, detail="Docker not available")
+    # Check Docker dynamically
+    if not is_docker_available():
+        raise HTTPException(status_code=503, detail="Docker not available - check if docker socket is mounted")
+    
+    # Verify container exists
+    try:
+        check_result = subprocess.run(
+            ["docker", "inspect", container_id],
+            capture_output=True, text=True, timeout=10
+        )
+        if check_result.returncode != 0:
+            raise HTTPException(status_code=404, detail=f"Container {container_id} not found")
+    except subprocess.TimeoutExpired:
+        raise HTTPException(status_code=504, detail="Docker command timed out")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error checking container: {str(e)}")
     
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     
