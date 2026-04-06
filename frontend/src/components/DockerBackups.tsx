@@ -164,6 +164,29 @@ export function DockerBackups() {
             Refresh
           </button>
         </div>
+        
+        {/* Backup Path Info */}
+        <div className={`mb-4 p-3 rounded-lg border transition-colors duration-300 ${
+          theme === 'dark'
+            ? 'bg-slate-800/50 border-slate-700 text-slate-300'
+            : 'bg-blue-50 border-blue-200 text-slate-700'
+        }`}>
+          <div className="flex items-center gap-2">
+            <span className="text-lg">📁</span>
+            <div>
+              <span className="font-medium">Backup Location: </span>
+              <code className={`px-2 py-0.5 rounded text-sm ${
+                theme === 'dark' ? 'bg-slate-700' : 'bg-white'
+              }`}>~/BoltDashPi5/backups/</code>
+              <span className="text-sm ml-2">(Local) </span>
+              <code className={`px-2 py-0.5 rounded text-sm ${
+                theme === 'dark' ? 'bg-slate-700' : 'bg-white'
+              }`}>/mnt/nas/backups/</code>
+              <span className="text-sm ml-2">(NAS)</span>
+            </div>
+          </div>
+        </div>
+
         <div className="space-y-3">
           {backups.length === 0 ? (
             <div className={`text-center py-8 transition-colors duration-300 ${
