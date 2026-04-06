@@ -148,6 +148,27 @@ def init_db():
         );
     """)
     
+    # Migration: Add missing columns to docker_backups if they don't exist
+    try:
+        cursor.execute("SELECT container_id FROM docker_backups LIMIT 1")
+    except sqlite3.OperationalError:
+        print("Adding container_id column to docker_backups...")
+        cursor.execute("ALTER TABLE docker_backups ADD COLUMN container_id TEXT")
+    
+    try:
+        cursor.execute("SELECT error_message FROM docker_backups LIMIT 1")
+    except sqlite3.OperationalError:
+        print("Adding error_message column to docker_backups...")
+        cursor.execute("ALTER TABLE docker_backups ADD COLUMN error_message TEXT")
+    
+    try:
+        cursor.execute("SELECT completed_at FROM docker_backups LIMIT 1")
+    except sqlite3.OperationalError:
+        print("Adding completed_at column to docker_backups...")
+        cursor.execute("ALTER TABLE docker_backups ADD COLUMN completed_at TEXT")
+    
+    conn.commit()
+    
     # Create admin user if not exists
     cursor.execute("SELECT COUNT(*) FROM users")
     if cursor.fetchone()[0] == 0:
