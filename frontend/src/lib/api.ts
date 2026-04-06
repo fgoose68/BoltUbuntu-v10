@@ -82,6 +82,12 @@ export class ApiClient {
     return this.request('/docker/backups');
   }
 
+  async deleteBackup(backupId: string) {
+    return this.request(`/docker/backups/${backupId}`, {
+      method: 'DELETE',
+    });
+  }
+
   async getSchedules() {
     return this.request('/docker/schedules');
   }

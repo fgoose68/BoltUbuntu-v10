@@ -665,6 +665,41 @@ def get_backups(payload: dict = Depends(verify_token)):
     
     return {"backups": backups}
 
+@app.delete("/api/docker/backups/{backup_id}")
+def delete_backup(backup_id: str, payload: dict = Depends(verify_token)):
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    # Get backup info
+    cursor.execute("SELECT * FROM docker_backups WHERE id = ?", (backup_id,))
+    backup = cursor.fetchone()
+    
+    if not backup:
+        conn.close()
+        raise HTTPException(status_code=404, detail="Backup not found")
+    
+    backup_dict = dict(backup)
+    backup_path = backup_dict.get("backup_path", "")
+    
+    # Delete file from disk
+    if backup_path:
+        try:
+            file_path = Path(backup_path)
+            if file_path.exists():
+                file_path.unlink()
+                print(f"Deleted backup file: {backup_path}")
+        except Exception as e:
+            print(f"Error deleting file {backup_path}: {e}")
+    
+    # Delete from database
+    cursor.execute("DELETE FROM docker_backups WHERE id = ?", (backup_id,))
+    conn.commit()
+    conn.close()
+    
+    log_event("backup", "info", f"Backup deleted: {backup_dict.get('container_name', 'unknown')}", user_id=payload["userId"])
+    
+    return {"message": "Backup deleted"}
+
 # Docker container control
 @app.post("/api/docker/containers/{container_id}/start")
 def start_container(container_id: str, payload: dict = Depends(verify_token)):
