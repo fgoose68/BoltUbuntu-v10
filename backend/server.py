@@ -256,11 +256,46 @@ class SettingRequest(BaseModel):
 # Routes - Health
 @app.get("/api/health")
 def health():
+    docker_ok = is_docker_available()
     return {
         "status": "ok", 
         "timestamp": datetime.utcnow().isoformat() + "Z",
-        "dockerAvailable": DOCKER_AVAILABLE
+        "dockerAvailable": docker_ok
     }
+
+@app.get("/api/debug/docker")
+def debug_docker():
+    """Debug endpoint to check Docker status"""
+    docker_ok = is_docker_available()
+    result = {
+        "dockerAvailable": docker_ok,
+        "dockerSocket": os.path.exists("/var/run/docker.sock"),
+        "containers": []
+    }
+    
+    if docker_ok:
+        try:
+            ps_result = subprocess.run(
+                ["docker", "ps", "-a", "--format", "{{.ID}}:{{.Names}}:{{.State}}"],
+                capture_output=True, text=True, timeout=10
+            )
+            result["dockerOutput"] = ps_result.stdout
+            result["dockerError"] = ps_result.stderr
+            result["returnCode"] = ps_result.returncode
+            
+            for line in ps_result.stdout.strip().split('\n'):
+                if line:
+                    parts = line.split(':')
+                    if len(parts) >= 3:
+                        result["containers"].append({
+                            "id": parts[0],
+                            "name": parts[1],
+                            "state": parts[2]
+                        })
+        except Exception as e:
+            result["error"] = str(e)
+    
+    return result
 
 # Routes - Auth
 @app.post("/api/auth/login")
@@ -570,8 +605,29 @@ def get_backups(payload: dict = Depends(verify_token)):
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM docker_backups ORDER BY created_at DESC LIMIT 50")
-    backups = [dict(row) for row in cursor.fetchall()]
+    rows = cursor.fetchall()
     conn.close()
+    
+    # Format backups for frontend
+    backups = []
+    for row in rows:
+        backup = dict(row)
+        # Map fields to frontend expected format
+        backups.append({
+            "id": backup.get("id"),
+            "backup_type": backup.get("backup_type", "export"),
+            "file_path": backup.get("backup_path", ""),
+            "file_size": backup.get("size", 0) or 0,
+            "destination": backup.get("destination", "local"),
+            "status": backup.get("status", "pending"),
+            "created_at": backup.get("created_at", ""),
+            "completed_at": backup.get("completed_at", ""),
+            "container": {
+                "name": backup.get("container_name", "unknown"),
+                "image": ""
+            }
+        })
+    
     return {"backups": backups}
 
 # Docker container control
