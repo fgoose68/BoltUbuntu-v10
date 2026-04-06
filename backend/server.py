@@ -516,21 +516,28 @@ def get_containers_status(payload: dict = Depends(verify_token)):
 
 @app.post("/api/docker/backup/{container_id}")
 async def backup_container(container_id: str, req: BackupRequest, payload: dict = Depends(verify_token)):
+    print(f"Backup request received: container_id={container_id}, req={req}")
+    
     # Check Docker dynamically
     if not is_docker_available():
         raise HTTPException(status_code=503, detail="Docker not available - check if docker socket is mounted")
     
     # Verify container exists
     try:
+        print(f"Checking container {container_id}...")
         check_result = subprocess.run(
             ["docker", "inspect", container_id],
             capture_output=True, text=True, timeout=10
         )
+        print(f"Docker inspect result: returncode={check_result.returncode}, stderr={check_result.stderr}")
         if check_result.returncode != 0:
             raise HTTPException(status_code=404, detail=f"Container {container_id} not found")
     except subprocess.TimeoutExpired:
         raise HTTPException(status_code=504, detail="Docker command timed out")
+    except HTTPException:
+        raise
     except Exception as e:
+        print(f"Error checking container: {e}")
         raise HTTPException(status_code=500, detail=f"Error checking container: {str(e)}")
     
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -541,19 +548,26 @@ async def backup_container(container_id: str, req: BackupRequest, payload: dict 
     else:
         backup_dir = BACKUP_PATH
     
+    print(f"Backup dir: {backup_dir}")
     backup_dir.mkdir(parents=True, exist_ok=True)
     backup_file = backup_dir / f"{req.containerName}_{timestamp}.tar"
+    print(f"Backup file: {backup_file}")
     
     # Create backup record
     backup_id = str(uuid4())
-    conn = get_db()
-    cursor = conn.cursor()
-    cursor.execute(
-        "INSERT INTO docker_backups (id, container_id, container_name, backup_path, backup_type, destination, status) VALUES (?, ?, ?, ?, ?, ?, ?)",
-        (backup_id, container_id, req.containerName, str(backup_file), req.backupType, req.destination, "running")
-    )
-    conn.commit()
-    conn.close()
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO docker_backups (id, container_id, container_name, backup_path, backup_type, destination, status) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (backup_id, container_id, req.containerName, str(backup_file), req.backupType, req.destination, "running")
+        )
+        conn.commit()
+        conn.close()
+        print(f"Backup record created: {backup_id}")
+    except Exception as e:
+        print(f"Database error: {e}")
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
     
     # Run backup async
     asyncio.create_task(perform_backup(backup_id, container_id, str(backup_file), req.backupType, req.containerName, payload["userId"]))
