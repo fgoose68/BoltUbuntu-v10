@@ -3,7 +3,7 @@ version: '3.8'
 services:
   backend:
     build: ./backend
-    container_name: dashboard-backend
+    container_name: BoltDashPi5-backend
     ports:
       - "8001:8001"
     volumes:
@@ -20,7 +20,7 @@ services:
 
   frontend:
     build: ./frontend
-    container_name: dashboard-frontend
+    container_name: BoltDashPi5-frontend
     ports:
       - "3050:3050"
     depends_on:

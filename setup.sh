@@ -1,8 +1,8 @@
 #!/bin/bash
 
 echo "=========================================="
-echo "  Raspberry Pi Dashboard - Setup Script"
-echo "  Ver.2.4Mar2026"
+echo "  BoltDashPi5 - Setup Script"
+echo "  Ver.6.1Apr2026"
 echo "=========================================="
 
 # Crea cartelle necessarie
