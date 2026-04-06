@@ -156,6 +156,24 @@ def init_db():
         cursor.execute("ALTER TABLE docker_backups ADD COLUMN container_id TEXT")
     
     try:
+        cursor.execute("SELECT backup_type FROM docker_backups LIMIT 1")
+    except sqlite3.OperationalError:
+        print("Adding backup_type column to docker_backups...")
+        cursor.execute("ALTER TABLE docker_backups ADD COLUMN backup_type TEXT DEFAULT 'export'")
+    
+    try:
+        cursor.execute("SELECT destination FROM docker_backups LIMIT 1")
+    except sqlite3.OperationalError:
+        print("Adding destination column to docker_backups...")
+        cursor.execute("ALTER TABLE docker_backups ADD COLUMN destination TEXT DEFAULT 'local'")
+    
+    try:
+        cursor.execute("SELECT size FROM docker_backups LIMIT 1")
+    except sqlite3.OperationalError:
+        print("Adding size column to docker_backups...")
+        cursor.execute("ALTER TABLE docker_backups ADD COLUMN size INTEGER")
+    
+    try:
         cursor.execute("SELECT error_message FROM docker_backups LIMIT 1")
     except sqlite3.OperationalError:
         print("Adding error_message column to docker_backups...")
