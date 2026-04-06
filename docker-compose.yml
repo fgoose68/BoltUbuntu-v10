@@ -15,7 +15,7 @@ services:
       - JWT_SECRET=raspberry_dashboard_secret_key_2024
       - DOCKER_HOST=unix:///var/run/docker.sock
     group_add:
-      - "999"
+      - "991"
     restart: unless-stopped
 
   frontend:
