@@ -218,7 +218,7 @@ docker-compose ps
 
 ## 7. Risoluzione Problemi
 
-### Container non si avvia
+### 7.1 Container non si avvia
 ```bash
 # Verifica i log
 docker logs BoltDashPi5-backend
@@ -228,20 +228,152 @@ docker-compose down
 docker-compose up -d --build
 ```
 
-### Errore database
+### 7.2 Errore database
 ```bash
 # Ricrea il database
 rm -f data/dashboard.db
 docker-compose restart backend
 ```
 
-### Docker non disponibile
+### 7.3 Docker non disponibile
 ```bash
 # Verifica gruppo docker
 cat /etc/group | grep docker
 
 # Aggiorna docker-compose.yml con il GID corretto
 # group_add: - "GID"
+```
+
+### 7.4 Errore "table has no column named..."
+
+Questo errore indica che il database ha uno schema vecchio incompatibile con il codice aggiornato.
+
+**Soluzione:**
+```bash
+cd ~/BoltDashPi5
+
+# Ferma i container
+docker-compose down
+
+# Elimina il database (ATTENZIONE: perderai i dati!)
+rm -f data/dashboard.db
+
+# Riavvia - il database verrà ricreato
+docker-compose up -d
+```
+
+### 7.5 Errore "Blocked request. This host is not allowed"
+
+Questo errore appare quando Vite blocca richieste da host non autorizzati.
+
+**Causa:** La configurazione `allowedHosts` in `vite.config.ts` non è corretta.
+
+**Soluzione:**
+```bash
+# Modifica vite.config.ts
+sed -i "s/allowedHosts: 'all'/allowedHosts: true/g" frontend/vite.config.ts
+
+# Riavvia il frontend
+docker-compose restart frontend
+```
+
+**Nota:** In Vite 5.x usare `allowedHosts: true` (boolean), NON `allowedHosts: 'all'` (stringa).
+
+### 7.6 Conflitto di Porte
+
+Se la porta 3050 o 8001 è già occupata da un'altra applicazione:
+
+**Verifica porte in uso:**
+```bash
+sudo netstat -tlnp | grep -E "3050|8001"
+# oppure
+sudo lsof -i :3050
+sudo lsof -i :8001
+```
+
+**Cambia porta nel docker-compose.yml:**
+```bash
+# Esempio: cambiare frontend da 3050 a 3060
+sed -i 's/3050:3050/3060:3050/g' docker-compose.yml
+
+# Riavvia
+docker-compose down
+docker-compose up -d
+```
+
+### 7.7 Configurazione Diversa per Ambienti
+
+⚠️ **IMPORTANTE:** Questo progetto può girare su ambienti diversi con configurazioni diverse.
+
+| Impostazione | Emergent Preview | Raspberry Pi |
+|--------------|------------------|--------------|
+| Porta Frontend | 3000 | 3050 |
+| Porta Backend | 8001 | 8001 |
+| allowedHosts | true | true |
+| proxy target | localhost:8001 | backend:8001 |
+| container_name frontend | - | BoltDashPi5-frontend |
+| container_name backend | - | BoltDashPi5-backend |
+
+**Per passare da un ambiente all'altro:**
+
+```bash
+# Per Raspberry Pi (porta 3050)
+sed -i 's/port: 3000/port: 3050/g' frontend/vite.config.ts
+sed -i 's/port 3000/port 3050/g' frontend/package.json
+
+# Per Emergent Preview (porta 3000)
+sed -i 's/port: 3050/port: 3000/g' frontend/vite.config.ts
+sed -i 's/port 3050/port 3000/g' frontend/package.json
+```
+
+### 7.8 Backup non funziona - "Request failed"
+
+**Possibili cause:**
+1. Docker non accessibile dal container
+2. Colonne mancanti nel database
+
+**Verifica Docker:**
+```bash
+# Testa se Docker funziona nel container
+docker exec BoltDashPi5-backend docker ps
+```
+
+**Se Docker non funziona, verifica il GID:**
+```bash
+# Trova il GID del gruppo docker
+cat /etc/group | grep docker
+# Output: docker:x:991:pi  (il numero 991 è il GID)
+
+# Aggiorna docker-compose.yml
+sed -i 's/group_add:/group_add:\n      - "991"/g' docker-compose.yml
+# Oppure modifica manualmente la sezione group_add
+```
+
+**Se errore database, ricrea:**
+```bash
+rm -f data/dashboard.db
+docker-compose restart backend
+```
+
+### 7.9 Frontend mostra pagina bianca
+
+**Verifica log:**
+```bash
+docker logs BoltDashPi5-frontend --tail 30
+```
+
+**Cause comuni:**
+1. Errore JavaScript nei componenti
+2. File corrotti
+3. Dipendenze mancanti
+
+**Soluzione:**
+```bash
+# Ricostruisci da zero
+docker-compose down
+docker rmi boltdashpi5-frontend
+docker-compose build --no-cache frontend
+docker-compose up -d
 ```
 
 ---
