@@ -25,6 +25,17 @@ Verificare il corretto funzionamento del progetto BoltDashPi5 da GitHub - una Da
 - Upload/download file Office
 - Notifiche Pushover (opzionale)
 
+## What's Been Implemented - May 2026
+
+### Session 2 - May 4, 2026 (Ver.4Mag2026)
+- ✅ Aggiunto tab "System Updates" completo nel Dashboard
+- ✅ Backend endpoints: `/api/system/info`, `/api/system/check-updates`, `/api/system/update`, `/api/system/kernel-update`, `/api/system/reboot`, `/api/system/scheduler/toggle`, `/api/system/updates/history`
+- ✅ Tabelle SQLite: `system_updates`, `update_scheduler`
+- ✅ Scheduler auto-update in background con loop asyncio (riavvio automatico al boot)
+- ✅ Notifiche Pushover integrate per: success/failure update, kernel update, reboot
+- ✅ Aggiornata versione a `Ver.4Mag2026` in Login, MANUALE_UTENTE, setup.sh, update.sh
+- ✅ Test backend: tutti gli endpoint rispondono correttamente (apt update rileva pacchetti)
+
 ## What's Been Implemented - April 2026
 
 ### Session 1 - April 4, 2026

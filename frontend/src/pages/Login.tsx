@@ -123,7 +123,7 @@ export function Login() {
         </div>
 
         <div className="absolute bottom-4 right-6 text-slate-500 text-xs font-medium">
-          Ver.6.1Apr2026
+          Ver.4Mag2026
         </div>
       </div>
     </div>

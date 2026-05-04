@@ -4,6 +4,7 @@ import { DockerBackups } from '../components/DockerBackups';
 import { DockerContainers } from '../components/DockerContainers';
 import { FileManager } from '../components/FileManager';
 import { Settings } from '../components/Settings';
+import { SystemUpdates } from '../components/SystemUpdates';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 
@@ -17,6 +18,7 @@ export function Dashboard() {
     { id: 'docker', label: 'Docker Backups', icon: '🐳' },
     { id: 'containers', label: 'Containers Status', icon: '📦' },
     { id: 'files', label: 'File Manager', icon: '📁' },
+    { id: 'updates', label: 'System Updates', icon: '🔄' },
     { id: 'settings', label: 'Settings', icon: '⚙️' },
   ];
 
@@ -105,6 +107,7 @@ export function Dashboard() {
           {activeTab === 'docker' && <DockerBackups />}
           {activeTab === 'containers' && <DockerContainers />}
           {activeTab === 'files' && <FileManager />}
+          {activeTab === 'updates' && <SystemUpdates />}
           {activeTab === 'settings' && <Settings />}
         </div>
       </div>

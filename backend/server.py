@@ -146,6 +146,25 @@ def init_db():
             user_id TEXT,
             created_at TEXT DEFAULT CURRENT_TIMESTAMP
         );
+
+        CREATE TABLE IF NOT EXISTS system_updates (
+            id TEXT PRIMARY KEY,
+            update_type TEXT NOT NULL,
+            status TEXT DEFAULT 'pending',
+            packages_updated INTEGER DEFAULT 0,
+            log_output TEXT,
+            error_message TEXT,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            completed_at TEXT
+        );
+
+        CREATE TABLE IF NOT EXISTS update_scheduler (
+            id TEXT PRIMARY KEY,
+            enabled INTEGER DEFAULT 0,
+            interval_hours INTEGER DEFAULT 24,
+            last_run TEXT,
+            updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+        );
     """)
     
     # Migration: Add missing columns to docker_backups if they don't exist
@@ -992,6 +1011,303 @@ def get_notifications(payload: dict = Depends(verify_token)):
     notifications = [dict(row) for row in cursor.fetchall()]
     conn.close()
     return {"notifications": notifications}
+
+# ============================================================
+# Routes - System Updates (OS / Kernel / Reboot)
+# ============================================================
+
+# In-memory scheduler task ref (initialised lazily)
+_scheduler_task: Optional[asyncio.Task] = None
+
+
+def _get_scheduler_row():
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM update_scheduler LIMIT 1")
+    row = cursor.fetchone()
+    conn.close()
+    return row
+
+
+def _ensure_scheduler_row():
+    row = _get_scheduler_row()
+    if not row:
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO update_scheduler (id, enabled, interval_hours) VALUES (?, ?, ?)",
+            (str(uuid4()), 0, 24)
+        )
+        conn.commit()
+        conn.close()
+        row = _get_scheduler_row()
+    return row
+
+
+def _format_uptime() -> str:
+    try:
+        with open("/proc/uptime", "r") as f:
+            seconds = float(f.read().split()[0])
+        days = int(seconds // 86400)
+        hours = int((seconds % 86400) // 3600)
+        minutes = int((seconds % 3600) // 60)
+        return f"{days}d {hours}h {minutes}m"
+    except Exception:
+        return "N/A"
+
+
+def _kernel_version() -> str:
+    try:
+        result = subprocess.run(["uname", "-r"], capture_output=True, text=True, timeout=5)
+        return result.stdout.strip() or "N/A"
+    except Exception:
+        return "N/A"
+
+
+def _last_update_at() -> Optional[str]:
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT created_at FROM system_updates WHERE update_type IN ('system','kernel') AND status = 'completed' ORDER BY created_at DESC LIMIT 1"
+    )
+    row = cursor.fetchone()
+    conn.close()
+    return row["created_at"] if row else None
+
+
+@app.get("/api/system/info")
+def system_info(payload: dict = Depends(verify_token)):
+    sched = _ensure_scheduler_row()
+    return {
+        "kernel_version": _kernel_version(),
+        "uptime": _format_uptime(),
+        "last_update": _last_update_at(),
+        "scheduler": {
+            "enabled": bool(sched["enabled"]),
+            "interval_hours": sched["interval_hours"],
+            "last_run": sched["last_run"],
+            "running": _scheduler_task is not None and not _scheduler_task.done(),
+        }
+    }
+
+
+def _run_apt(args: List[str], timeout: int = 600) -> Dict[str, Any]:
+    """Run apt-get command with non-interactive env. Returns stdout/stderr/returncode."""
+    env = os.environ.copy()
+    env["DEBIAN_FRONTEND"] = "noninteractive"
+    cmd = ["sudo", "-n", "apt-get"] + args
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout, env=env)
+        return {
+            "returncode": result.returncode,
+            "stdout": result.stdout,
+            "stderr": result.stderr,
+        }
+    except FileNotFoundError:
+        return {"returncode": 127, "stdout": "", "stderr": "apt-get not found (not a Debian/Raspberry Pi system)"}
+    except subprocess.TimeoutExpired:
+        return {"returncode": 124, "stdout": "", "stderr": f"Timeout after {timeout}s"}
+    except Exception as e:
+        return {"returncode": 1, "stdout": "", "stderr": str(e)}
+
+
+@app.post("/api/system/check-updates")
+def check_updates(payload: dict = Depends(verify_token)):
+    upd = _run_apt(["update", "-q"], timeout=120)
+    if upd["returncode"] != 0:
+        raise HTTPException(status_code=500, detail=f"apt update failed: {upd['stderr']}")
+
+    lst = _run_apt(["-s", "upgrade"], timeout=60)
+    packages: List[str] = []
+    kernel_update = False
+    for line in (lst["stdout"] or "").splitlines():
+        # apt -s upgrade prints "Inst <pkg> [oldver] (newver ...)"
+        if line.startswith("Inst "):
+            parts = line.split()
+            if len(parts) >= 2:
+                pkg = parts[1]
+                packages.append(pkg)
+                if pkg.startswith("linux-image") or pkg.startswith("raspberrypi-kernel") or pkg.startswith("linux-headers"):
+                    kernel_update = True
+
+    return {
+        "packages_count": len(packages),
+        "packages": packages,
+        "kernel_update_available": kernel_update,
+        "checked_at": datetime.utcnow().isoformat() + "Z",
+    }
+
+
+def _record_update(update_type: str, status: str, packages_updated: int, log_output: str, error_message: Optional[str] = None) -> str:
+    record_id = str(uuid4())
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute(
+        "INSERT INTO system_updates (id, update_type, status, packages_updated, log_output, error_message, completed_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        (record_id, update_type, status, packages_updated, log_output[-8000:] if log_output else "", error_message, datetime.utcnow().isoformat())
+    )
+    conn.commit()
+    conn.close()
+    return record_id
+
+
+@app.post("/api/system/update")
+async def run_system_update(payload: dict = Depends(verify_token)):
+    log_event("system_update", "info", "System update started", user_id=payload["userId"])
+    upd = _run_apt(["update", "-q"], timeout=180)
+    if upd["returncode"] != 0:
+        _record_update("system", "error", 0, upd["stderr"], upd["stderr"])
+        await send_pushover("Aggiornamento Sistema FALLITO", upd["stderr"][:500], priority=1)
+        return {"status": "error", "error": upd["stderr"]}
+
+    pkgs_before = check_updates_count()
+    upgrade = _run_apt(["upgrade", "-y"], timeout=1800)
+    log = (upd["stdout"] or "") + "\n" + (upgrade["stdout"] or "") + "\n" + (upgrade["stderr"] or "")
+
+    if upgrade["returncode"] != 0:
+        _record_update("system", "error", 0, log, upgrade["stderr"])
+        log_event("system_update", "error", "System update failed", {"error": upgrade["stderr"][:500]}, payload["userId"])
+        await send_pushover("Aggiornamento Sistema FALLITO", upgrade["stderr"][:500], priority=1)
+        return {"status": "error", "error": upgrade["stderr"]}
+
+    _record_update("system", "completed", pkgs_before, log)
+    log_event("system_update", "info", f"System update completed: {pkgs_before} packages", user_id=payload["userId"])
+    await send_pushover("Aggiornamento Sistema Completato", f"{pkgs_before} pacchetti aggiornati con successo")
+    return {"status": "completed", "packages_updated": pkgs_before, "log": log[-2000:]}
+
+
+def check_updates_count() -> int:
+    """Helper to count pending packages from a simulated upgrade."""
+    lst = _run_apt(["-s", "upgrade"], timeout=60)
+    return sum(1 for ln in (lst["stdout"] or "").splitlines() if ln.startswith("Inst "))
+
+
+@app.post("/api/system/kernel-update")
+async def kernel_update(payload: dict = Depends(verify_token)):
+    log_event("system_update", "info", "Kernel update started", user_id=payload["userId"])
+    upd = _run_apt(["update", "-q"], timeout=180)
+    if upd["returncode"] != 0:
+        _record_update("kernel", "error", 0, upd["stderr"], upd["stderr"])
+        await send_pushover("Aggiornamento Kernel FALLITO", upd["stderr"][:500], priority=1)
+        return {"status": "error", "error": upd["stderr"]}
+
+    upgrade = _run_apt(["full-upgrade", "-y"], timeout=2400)
+    log = (upd["stdout"] or "") + "\n" + (upgrade["stdout"] or "") + "\n" + (upgrade["stderr"] or "")
+
+    if upgrade["returncode"] != 0:
+        _record_update("kernel", "error", 0, log, upgrade["stderr"])
+        log_event("system_update", "error", "Kernel update failed", {"error": upgrade["stderr"][:500]}, payload["userId"])
+        await send_pushover("Aggiornamento Kernel FALLITO", upgrade["stderr"][:500], priority=1)
+        return {"status": "error", "error": upgrade["stderr"]}
+
+    _record_update("kernel", "completed", 1, log)
+    log_event("system_update", "info", "Kernel updated successfully", user_id=payload["userId"])
+    await send_pushover("Kernel Aggiornato", "Riavvio richiesto per applicare il nuovo kernel", priority=1)
+    return {"status": "completed", "log": log[-2000:]}
+
+
+@app.post("/api/system/reboot")
+async def system_reboot(payload: dict = Depends(verify_token)):
+    log_event("system_update", "warning", "System reboot requested", user_id=payload["userId"])
+    _record_update("reboot", "completed", 0, "Reboot triggered via dashboard")
+    await send_pushover("Riavvio Sistema", "Il Raspberry Pi si sta riavviando", priority=1)
+
+    async def do_reboot():
+        await asyncio.sleep(5)
+        try:
+            subprocess.Popen(["sudo", "-n", "/sbin/reboot"])
+        except Exception as e:
+            print(f"Reboot failed: {e}")
+
+    asyncio.create_task(do_reboot())
+    return {"status": "ok", "message": "Reboot scheduled in 5s"}
+
+
+@app.post("/api/system/scheduler/toggle")
+def toggle_scheduler(payload: dict = Depends(verify_token)):
+    sched = _ensure_scheduler_row()
+    new_enabled = 0 if sched["enabled"] else 1
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute(
+        "UPDATE update_scheduler SET enabled = ?, updated_at = ? WHERE id = ?",
+        (new_enabled, datetime.utcnow().isoformat(), sched["id"])
+    )
+    conn.commit()
+    conn.close()
+
+    global _scheduler_task
+    if new_enabled:
+        if _scheduler_task is None or _scheduler_task.done():
+            _scheduler_task = asyncio.create_task(_scheduler_loop())
+    else:
+        if _scheduler_task and not _scheduler_task.done():
+            _scheduler_task.cancel()
+
+    return {"enabled": bool(new_enabled)}
+
+
+async def _scheduler_loop():
+    """Background loop that performs auto-updates at the configured interval."""
+    while True:
+        try:
+            sched = _get_scheduler_row()
+            if not sched or not sched["enabled"]:
+                return
+            interval = max(1, int(sched["interval_hours"] or 24))
+            await asyncio.sleep(interval * 3600)
+
+            # Re-check the flag right before running
+            sched = _get_scheduler_row()
+            if not sched or not sched["enabled"]:
+                return
+
+            log_event("system_update", "info", "Auto-update started by scheduler")
+            upd = _run_apt(["update", "-q"], timeout=180)
+            if upd["returncode"] == 0:
+                upgrade = _run_apt(["upgrade", "-y"], timeout=1800)
+                log = (upd["stdout"] or "") + "\n" + (upgrade["stdout"] or "")
+                if upgrade["returncode"] == 0:
+                    _record_update("auto", "completed", 0, log)
+                    await send_pushover("Auto-Update Completato", "Aggiornamento automatico completato")
+                else:
+                    _record_update("auto", "error", 0, log, upgrade["stderr"])
+                    await send_pushover("Auto-Update FALLITO", upgrade["stderr"][:500], priority=1)
+            else:
+                _record_update("auto", "error", 0, upd["stderr"], upd["stderr"])
+
+            conn = get_db()
+            cursor = conn.cursor()
+            cursor.execute(
+                "UPDATE update_scheduler SET last_run = ? WHERE id = ?",
+                (datetime.utcnow().isoformat(), sched["id"])
+            )
+            conn.commit()
+            conn.close()
+        except asyncio.CancelledError:
+            return
+        except Exception as e:
+            print(f"Scheduler loop error: {e}")
+            await asyncio.sleep(3600)
+
+
+@app.get("/api/system/updates/history")
+def get_update_history(payload: dict = Depends(verify_token)):
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM system_updates ORDER BY created_at DESC LIMIT 50")
+    updates = [dict(row) for row in cursor.fetchall()]
+    conn.close()
+    return {"updates": updates}
+
+
+@app.on_event("startup")
+async def _start_scheduler_on_boot():
+    """Resume scheduler if it was enabled on previous boot."""
+    global _scheduler_task
+    sched = _ensure_scheduler_row()
+    if sched and sched["enabled"]:
+        _scheduler_task = asyncio.create_task(_scheduler_loop())
 
 if __name__ == "__main__":
     import uvicorn

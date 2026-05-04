@@ -2,7 +2,7 @@
 
 echo "=========================================="
 echo "  BoltDashPi5 - Setup Script"
-echo "  Ver.6.1Apr2026"
+echo "  Ver.4Mag2026"
 echo "=========================================="
 
 # Crea cartelle necessarie

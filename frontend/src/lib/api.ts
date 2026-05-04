@@ -243,6 +243,34 @@ export class ApiClient {
       method: 'POST',
     });
   }
+
+  async getSystemInfo() {
+    return this.request('/system/info');
+  }
+
+  async checkUpdates() {
+    return this.request('/system/check-updates', { method: 'POST' });
+  }
+
+  async runSystemUpdate() {
+    return this.request('/system/update', { method: 'POST' });
+  }
+
+  async updateKernel() {
+    return this.request('/system/kernel-update', { method: 'POST' });
+  }
+
+  async systemReboot() {
+    return this.request('/system/reboot', { method: 'POST' });
+  }
+
+  async toggleScheduler() {
+    return this.request('/system/scheduler/toggle', { method: 'POST' });
+  }
+
+  async getUpdateHistory() {
+    return this.request('/system/updates/history');
+  }
 }
 
 export const api = new ApiClient();

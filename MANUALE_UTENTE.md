@@ -228,7 +228,7 @@ cat > ~/BoltDashPi5/update.sh << 'EOF'
 
 echo "=========================================="
 echo "  BoltDashPi5 - Script di Aggiornamento"
-echo "  Ver.6.1Apr2026"
+echo "  Ver.4Mag2026"
 echo "=========================================="
 echo ""
 
@@ -539,4 +539,4 @@ sed -i 's/old-name/new-name/g' docker-compose.yml
 
 ---
 
-*Documento generato per BoltDashPi5 Ver.6.1Apr2026*
+*Documento generato per BoltDashPi5 Ver.4Mag2026*
