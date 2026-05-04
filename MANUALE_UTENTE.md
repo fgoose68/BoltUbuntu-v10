@@ -154,6 +154,36 @@ Configurazione dell'applicazione.
 - Filtra per tipo di evento
 - Monitora backup, upload, login, errori
 
+### 4.6 System Updates (Ver.4Mag2026)
+
+Tab dedicata alla gestione aggiornamenti OS/Kernel del Raspberry Pi.
+
+**Funzionalità:**
+- **Informazioni Sistema**: kernel attivo, uptime, ultimo aggiornamento, stato scheduler
+- **Aggiornamenti Automatici**: scheduler in background con intervallo configurabile (default 24h)
+- **Controlla Aggiornamenti**: esegue `apt-get update` e mostra pacchetti disponibili
+- **Aggiorna Sistema**: lancia `apt-get upgrade -y` con timer di stima
+- **Aggiorna Kernel**: lancia `apt-get full-upgrade -y` mirato kernel
+- **Riavvio Sistema**: countdown 5s + reboot + notifica Pushover
+- **Cronologia**: storico di tutti gli aggiornamenti effettuati
+
+**Widget compatto su System Monitor:**
+La home page mostra un riquadro riepilogativo "🔄 System Updates" con:
+- Numero pacchetti aggiornabili (badge colorato)
+- Disponibilità update kernel
+- Data ultimo aggiornamento
+- Stato scheduler auto-update
+
+**Notifiche Pushover automatiche** per:
+- Aggiornamento sistema completato/fallito
+- Aggiornamento kernel completato/fallito
+- Riavvio sistema in corso
+
+**Stima tempo aggiornamento:**
+La barra di avanzamento mostra `tempo trascorso / tempo stimato` (formula: 5s base + 3s per pacchetto, ~120s per kernel).
+
+> ⚠️ **PREREQUISITI**: per funzionare, questa tab richiede la configurazione di `sudoers` sul Raspberry Pi. Vedi sezione **8. Configurazione Sudoers per System Updates** più avanti.
+
 ---
 
 ## 5. Architettura Tecnica
@@ -536,6 +566,75 @@ sed -i 's/old-name/new-name/g' docker-compose.yml
 **Repository:** https://github.com/USERNAME/BoltDashPi5
 
 **Autore:** Sviluppato con assistenza di Emergent AI
+
+---
+
+## 8. Configurazione Sudoers per System Updates
+
+> 🔴 **OBBLIGATORIO** per far funzionare il tab System Updates. Da eseguire **una sola volta** sul Raspberry Pi (NON dentro al container Docker).
+
+### 8.1 Perché serve
+Il tab System Updates esegue comandi privilegiati (`apt-get upgrade`, `reboot`) dal container backend. Affinché possa farlo senza richiedere password ogni volta, il sistema operativo del Raspberry Pi deve autorizzarli tramite `sudoers`.
+
+### 8.2 Step 1 — Crea il file sudoers
+Apri un terminale sul Raspberry Pi (via SSH o direttamente) ed esegui:
+
+```bash
+sudo tee /etc/sudoers.d/boltdash-updates > /dev/null <<'EOF'
+# BoltDashPi5 - autorizzazioni per System Updates tab
+root ALL=(ALL) NOPASSWD: /usr/bin/apt-get
+root ALL=(ALL) NOPASSWD: /sbin/reboot
+root ALL=(ALL) NOPASSWD: /sbin/shutdown
+EOF
+```
+
+### 8.3 Step 2 — Imposta i permessi corretti
+```bash
+sudo chmod 440 /etc/sudoers.d/boltdash-updates
+```
+
+### 8.4 Step 3 — Verifica la sintassi
+```bash
+sudo visudo -cf /etc/sudoers.d/boltdash-updates
+```
+Output atteso:
+```
+/etc/sudoers.d/boltdash-updates: parsed OK
+```
+Se vedi errori, **NON riavviare nulla** e correggi prima la sintassi (un errore in sudoers può bloccare tutto sudo!).
+
+### 8.5 Step 4 — Riavvia i container per applicare il nuovo `docker-compose.yml`
+Il file `docker-compose.yml` è già stato aggiornato (Ver.4Mag2026) con `privileged: true` e i mount necessari per `apt`. Quindi:
+
+```bash
+cd ~/BoltDashPi5
+git pull origin main          # scarica le modifiche da GitHub
+docker-compose down
+docker-compose up -d --build
+```
+
+### 8.6 Step 5 — Test
+1. Apri la dashboard → `http://<IP-PI>:3050`
+2. Login (`admin@dashboard.local` / `admin123`)
+3. Vai sul tab **🔄 System Updates**
+4. Clicca **"Controlla Aggiornamenti"**
+5. Dovresti vedere il numero di pacchetti aggiornabili (es. "5 pacchetti disponibili")
+
+Se invece appare un errore `apt-get not found` o `permission denied`:
+- Verifica che `/etc/sudoers.d/boltdash-updates` esista e abbia permessi `440`
+- Verifica che nel `docker-compose.yml` ci siano i mount `/etc/apt`, `/var/lib/apt`, `/usr/bin/apt-get`
+- Esegui `docker-compose logs backend` e cerca righe contenenti `apt`
+
+### 8.7 Disinstallazione (rollback)
+Per rimuovere le autorizzazioni sudo:
+```bash
+sudo rm /etc/sudoers.d/boltdash-updates
+```
+
+### 8.8 ⚠️ Note di Sicurezza
+- Il file sudoers consente **solo** i comandi `apt-get`, `reboot` e `shutdown`. Nessun altro comando privilegiato è autorizzato.
+- Il container backend gira come `root` per accedere ad `apt`. Questo è accettabile in una rete domestica fidata, **non** in un sistema esposto pubblicamente su Internet.
+- Se esponi la dashboard su Internet (es. via reverse proxy), **cambia subito** la password admin di default e considera l'aggiunta di un firewall/VPN.
 
 ---
 
