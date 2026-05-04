@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { api } from '../lib/api';
 import { useTheme } from '../contexts/ThemeContext';
+import { estimateSeconds } from './UpdatesWidget';
 
 interface SystemInfo {
   kernel_version: string;
@@ -41,6 +42,7 @@ export function SystemUpdates() {
   const [updatingKernel, setUpdatingKernel] = useState(false);
   const [rebooting, setRebooting] = useState(false);
   const [rebootCountdown, setRebootCountdown] = useState<number | null>(null);
+  const [updateProgress, setUpdateProgress] = useState<{ kind: string; total: number; elapsed: number } | null>(null);
 
   useEffect(() => {
     loadData();
@@ -52,6 +54,16 @@ export function SystemUpdates() {
       return () => clearTimeout(timer);
     }
   }, [rebootCountdown]);
+
+  // Timer di avanzamento stima durante l'aggiornamento
+  useEffect(() => {
+    if (updateProgress && (updating || updatingKernel)) {
+      const t = setInterval(() => {
+        setUpdateProgress((p) => p ? { ...p, elapsed: p.elapsed + 1 } : null);
+      }, 1000);
+      return () => clearInterval(t);
+    }
+  }, [updateProgress, updating, updatingKernel]);
 
   const loadData = async () => {
     try {
@@ -83,6 +95,8 @@ export function SystemUpdates() {
 
   const handleRunUpdate = async () => {
     if (!window.confirm('Vuoi avviare l\'aggiornamento del sistema?')) return;
+    const totalSec = estimateSeconds(updateCheck?.packages_count || 10);
+    setUpdateProgress({ kind: 'system', total: totalSec, elapsed: 0 });
     setUpdating(true);
     try {
       const result = await api.runSystemUpdate();
@@ -97,11 +111,13 @@ export function SystemUpdates() {
       alert('Errore: ' + (err.message || 'Unknown'));
     } finally {
       setUpdating(false);
+      setUpdateProgress(null);
     }
   };
 
   const handleKernelUpdate = async () => {
     if (!window.confirm('Vuoi aggiornare il kernel? Sarà necessario un riavvio.')) return;
+    setUpdateProgress({ kind: 'kernel', total: estimateSeconds(40), elapsed: 0 });
     setUpdatingKernel(true);
     try {
       const result = await api.updateKernel();
@@ -115,6 +131,7 @@ export function SystemUpdates() {
       alert('Errore: ' + (err.message || 'Unknown'));
     } finally {
       setUpdatingKernel(false);
+      setUpdateProgress(null);
     }
   };
 
@@ -143,6 +160,12 @@ export function SystemUpdates() {
   const formatDate = (dateString: string) => {
     if (!dateString) return 'N/A';
     return new Date(dateString).toLocaleString('it-IT');
+  };
+
+  const formatTime = (seconds: number): string => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m}:${String(s).padStart(2, '0')}`;
   };
 
   const cardBg = theme === 'dark' ? 'bg-slate-800' : 'bg-white';
@@ -235,6 +258,11 @@ export function SystemUpdates() {
             <p className={textPrimary}>
               <strong>Pacchetti disponibili:</strong> {updateCheck.packages_count}
             </p>
+            {updateCheck.packages_count > 0 && (
+              <p className={`text-sm ${textSecondary} mt-1`}>
+                <strong>Tempo stimato:</strong> ~{Math.ceil(estimateSeconds(updateCheck.packages_count) / 60)} minuti
+              </p>
+            )}
             {updateCheck.kernel_update_available && (
               <p className="text-yellow-500 font-medium mt-2">Aggiornamento kernel disponibile</p>
             )}
@@ -244,6 +272,30 @@ export function SystemUpdates() {
                 <p className={`text-sm ${textPrimary}`}>{updateCheck.packages.slice(0, 10).join(', ')}{updateCheck.packages.length > 10 ? '...' : ''}</p>
               </div>
             )}
+          </div>
+        )}
+
+        {updateProgress && (
+          <div data-testid="update-progress" className={`mt-4 p-4 rounded-lg border-2 ${theme === 'dark' ? 'bg-slate-900 border-blue-500' : 'bg-blue-50 border-blue-500'}`}>
+            <div className="flex items-center justify-between mb-2">
+              <span className={`font-medium ${textPrimary}`}>
+                {updateProgress.kind === 'kernel' ? 'Aggiornamento Kernel in corso...' : 'Aggiornamento Sistema in corso...'}
+              </span>
+              <span className={`font-mono text-sm ${textPrimary}`}>
+                {formatTime(updateProgress.elapsed)} / ~{formatTime(updateProgress.total)}
+              </span>
+            </div>
+            <div className={`w-full h-3 rounded-full overflow-hidden ${theme === 'dark' ? 'bg-slate-700' : 'bg-slate-200'}`}>
+              <div
+                className="h-3 bg-gradient-to-r from-blue-500 to-cyan-400 transition-all duration-1000"
+                style={{ width: `${Math.min(100, (updateProgress.elapsed / updateProgress.total) * 100)}%` }}
+              />
+            </div>
+            <p className={`text-xs mt-2 ${textSecondary}`}>
+              {updateProgress.elapsed >= updateProgress.total
+                ? 'Tempo stimato superato — il processo è ancora in esecuzione, attendi il completamento'
+                : `Rimanenti: ~${formatTime(Math.max(0, updateProgress.total - updateProgress.elapsed))}`}
+            </p>
           </div>
         )}
       </div>

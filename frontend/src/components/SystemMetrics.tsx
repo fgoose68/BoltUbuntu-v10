@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { api } from '../lib/api';
 import { useTheme } from '../contexts/ThemeContext';
+import { UpdatesWidget } from './UpdatesWidget';
 
 interface Metrics {
   cpu: { usage: number; cores: number };
@@ -136,6 +137,8 @@ export function SystemMetrics() {
           />
         </div>
       </div>
+
+      <UpdatesWidget />
 
       <div className={`rounded-xl p-6 border transition-colors duration-300 ${
         theme === 'dark'
