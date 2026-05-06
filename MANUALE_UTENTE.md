@@ -638,4 +638,87 @@ sudo rm /etc/sudoers.d/boltdash-updates
 
 ---
 
+## 9. Troubleshooting
+
+### 9.1 Frontend non raggiungibile sulla porta 3050
+
+**Sintomo:** dopo `docker-compose up -d` i container risultano `Up`, ma aprendo `http://<IP-PI>:3050` il browser dà "Impossibile raggiungere il sito" o timeout.
+
+**Causa:** gli script `npm` nel `frontend/package.json` forzano la porta tramite argomenti CLI (`--port 3000`), che hanno **priorità** sul `vite.config.ts`. Risultato: Vite parte sulla porta 3000 dentro al container, ma Docker espone la 3050 → il frontend non è raggiungibile.
+
+**Soluzione (già applicata in Ver.4Mag2026):**
+Negli script di `frontend/package.json` rimuovere completamente i flag CLI di porta/host, così Vite legge la configurazione ufficiale da `vite.config.ts`:
+
+```json
+"scripts": {
+  "start": "vite",
+  "dev": "vite",
+  "build": "vite build",
+  "preview": "vite preview"
+}
+```
+
+Poi nel `vite.config.ts` impostare la porta corretta (3050 per il Pi):
+
+```ts
+server: {
+  host: '0.0.0.0',
+  port: 3050,
+  allowedHosts: true,
+  proxy: {
+    '/api': {
+      target: 'http://backend:8001',
+      changeOrigin: true,
+    }
+  }
+}
+```
+
+> ⚠️ **Importante:** il proxy deve puntare a `http://backend:8001` (nome del servizio Docker), **NON** a `localhost:8001`. Dentro al container `localhost` è il container stesso, non il backend.
+
+Dopo aver salvato:
+```bash
+cd ~/BoltDashPi5
+docker-compose down
+docker-compose up -d --build frontend
+```
+
+### 9.2 Tab System Updates dà errore "apt-get not found" o "permission denied"
+
+**Causa:** non è stato configurato `sudoers` o mancano i mount nel `docker-compose.yml`.
+**Soluzione:** vedi sezione **8. Configurazione Sudoers per System Updates**.
+
+### 9.3 Dopo `git pull` la dashboard mostra ancora la versione vecchia
+
+**Causa:** Docker usa la cache delle build precedenti.
+**Soluzione:** rebuild completo senza cache:
+```bash
+cd ~/BoltDashPi5
+docker-compose down
+docker images | grep -i boltdash | awk '{print $3}' | xargs -r docker rmi -f
+docker builder prune -af
+docker-compose build --no-cache --pull
+docker-compose up -d
+```
+Poi nel browser: **hard refresh** (`Ctrl+Shift+R`) o finestra in incognito.
+
+### 9.4 Container in stato "Restarting" o "Exit"
+
+**Diagnosi:**
+```bash
+docker-compose logs --tail=50 backend
+docker-compose logs --tail=50 frontend
+```
+Cerca righe con `Error`, `Exception`, `EADDRINUSE`. Le cause più comuni:
+- Porta occupata: `sudo lsof -i :3050` o `:8001` per identificare il processo
+- File mancanti: `git status` per verificare lo stato del repository
+- Permessi cartelle: `sudo chown -R 1000:1000 data backups uploads`
+
+### 9.5 Login fallisce con "Network Error"
+
+**Causa:** il frontend non riesce a raggiungere il backend. Vedi sezione 9.1.
+**Test manuale:** dal tuo PC apri `http://<IP-PI>:8001/api/health` — deve rispondere con un JSON `{"status":"ok"}`.
+
+---
+
 *Documento generato per BoltDashPi5 Ver.4Mag2026*
