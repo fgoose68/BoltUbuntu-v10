@@ -1,0 +1,66 @@
+{
+  "summary": "Backend (22/22 tests) and frontend e2e tests for BoltDashPi5 v.4Mag2026 all PASS. New System Updates feature is working end-to-end: /api/system/info, /api/system/check-updates, /api/system/scheduler/toggle, /api/system/updates/history all functional; Docker endpoints correctly return dockerAvailable:false without crashing; Login shows Ver.4Mag2026; Dashboard exposes the 6 tabs; UpdatesWidget on System Monitor shows the 4 fields and the 'Controlla' button triggers an apt check that returns 4 packages with estimated time; System Updates tab shows all 6 cards and 'Controlla Aggiornamenti' works. Found and fixed one real backend bug: scheduler/toggle endpoint missing async causing 500 (RuntimeError: no running event loop) when enabling scheduler.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [],
+    "fixed_during_testing": [
+      {
+        "endpoint": "POST /api/system/scheduler/toggle",
+        "issue": "Sync def endpoint called asyncio.create_task() from threadpool worker -> RuntimeError: no running event loop -> 500 when enabling scheduler",
+        "fix": "Changed `def toggle_scheduler` to `async def toggle_scheduler` in /app/backend/server.py (line 1227). Verified by re-running pytest (now passes)."
+      }
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "passed_tests": [
+    "Backend: /api/health (dockerAvailable:false)",
+    "Backend: /api/auth/login admin@dashboard.local/admin123 returns JWT",
+    "Backend: /api/auth/me, unauthorized 401 protection",
+    "Backend: /api/metrics/current (cpu/ram/disk/temperature) and /api/metrics/history",
+    "Backend: /api/docker/containers and /api/docker/containers/status (graceful dockerAvailable:false, no crash)",
+    "Backend: /api/docker/backups, /api/docker/schedules, /api/files/list, /api/settings, /api/settings/logs, /api/notifications/config",
+    "Backend: /api/system/info returns kernel_version, uptime, scheduler{enabled,interval_hours,last_run,running}",
+    "Backend: POST /api/system/check-updates returns packages_count + packages list + kernel_update_available",
+    "Backend: POST /api/system/scheduler/toggle flips boolean and persists; toggling back works (after fix)",
+    "Backend: GET /api/system/updates/history returns updates array",
+    "Backend: destructive endpoints exist (GET returns 405, not 404) for /api/system/update, /api/system/kernel-update, /api/system/reboot",
+    "Frontend: Login page shows Ver.4Mag2026 string",
+    "Frontend: Login admin@dashboard.local works and lands on Dashboard",
+    "Frontend: 6 tabs present (System Monitor, Docker Backups, Containers Status, File Manager, System Updates, Settings)",
+    "Frontend: System Monitor renders updates-widget with 4 fields (Pacchetti, Kernel, Ultimo update, Auto-update)",
+    "Frontend: data-testid present: updates-widget, widget-check-btn, widget-open-btn, update-progress",
+    "Frontend: Clicking 'Controlla' in widget runs apt check and shows 'Stima tempo: ~1 min' with package list",
+    "Frontend: System Updates tab renders all 6 cards (Informazioni Sistema, Aggiornamenti Automatici, Aggiornamento Sistema, Aggiornamento Kernel, Riavvio Sistema, Cronologia)",
+    "Frontend: 'Controlla Aggiornamenti' button works, shows packages and estimated time"
+  ],
+  "test_report_links": [
+    "/app/backend/tests/test_boltdash_api.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [
+    "Validate the async fix to /api/system/scheduler/toggle is acceptable (already applied by testing agent, all tests green)."
+  ],
+  "critical_code_review_comments": [
+    "scheduler toggle endpoint was incorrectly defined as sync `def` while spawning asyncio tasks - generic anti-pattern; consider auditing other sync endpoints using asyncio.create_task or similar (none others spotted in scan).",
+    "/api/auth/me returns {user:{...}} while many other endpoints return resource flat. Inconsistent API shape - cosmetic, but may confuse clients.",
+    "/api/metrics/current returns {metrics:{...}} while frontend likely consumes this; consistent but worth documenting in API.",
+    "_run_apt uses 'sudo -n' which silently fails on non-Pi systems - already handled with returncode check; OK.",
+    "/api/system/reboot triggers actual subprocess Popen reboot in a fire-and-forget task - acceptable for the target Pi but ensure the deploy uses a dedicated user with limited sudoers.",
+    "server.py is ~1315 lines, approaching the 700-line guideline - consider splitting into routers/modules (auth, metrics, docker, files, settings, system)."
+  ],
+  "updated_files": [
+    "/app/backend/server.py (toggle_scheduler made async)",
+    "/app/backend/tests/test_boltdash_api.py (new pytest suite)"
+  ],
+  "success_rate": {"backend": "100% (22/22)", "frontend": "100% (all critical flows)"},
+  "test_credentials": "admin@dashboard.local / admin123 (from /app/memory/test_credentials.md)",
+  "seed_data_creation": "None. Tests are read-mostly; scheduler toggled twice to restore prior state.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Pytest suite at /app/backend/tests/test_boltdash_api.py covers all endpoints incl. new System Updates. Reuse it as regression. Public URL: https://b8ea6577-e12a-4a4d-a283-d5c89eea915c.preview.emergentagent.com. NEVER POST to /api/system/update, /api/system/kernel-update, /api/system/reboot - they are destructive and run real apt/reboot in container. /api/system/check-updates is safe (read-only) and finds ~4 packages currently. Docker is unavailable in Emergent - endpoints must return dockerAvailable:false (already validated).",
+  "rca_of_the_issue": "POST /api/system/scheduler/toggle returned 500 when enabling: handler was sync `def` so FastAPI ran it in starlette's threadpool. The handler then called `asyncio.create_task(_scheduler_loop())` which requires a running event loop in the current thread; threadpool threads have none -> RuntimeError. Reproduced via pytest (test_scheduler_toggle_persists). Mitigation applied: declare handler as `async def` so it runs on the main event loop, where create_task works. Re-run tests: 22/22 pass."
+}

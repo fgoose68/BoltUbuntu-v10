@@ -1224,7 +1224,7 @@ async def system_reboot(payload: dict = Depends(verify_token)):
 
 
 @app.post("/api/system/scheduler/toggle")
-def toggle_scheduler(payload: dict = Depends(verify_token)):
+async def toggle_scheduler(payload: dict = Depends(verify_token)):
     sched = _ensure_scheduler_row()
     new_enabled = 0 if sched["enabled"] else 1
     conn = get_db()
