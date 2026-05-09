@@ -1092,10 +1092,14 @@ def system_info(payload: dict = Depends(verify_token)):
 
 
 def _run_apt(args: List[str], timeout: int = 600) -> Dict[str, Any]:
-    """Run apt-get command with non-interactive env. Returns stdout/stderr/returncode."""
+    """Run apt-get command with non-interactive env. Returns stdout/stderr/returncode.
+
+    The backend container runs as root (privileged: true), so sudo is not needed
+    and is intentionally not installed in the image. We invoke apt-get directly.
+    """
     env = os.environ.copy()
     env["DEBIAN_FRONTEND"] = "noninteractive"
-    cmd = ["sudo", "-n", "apt-get"] + args
+    cmd = ["apt-get"] + args
     try:
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout, env=env)
         return {
@@ -1104,7 +1108,7 @@ def _run_apt(args: List[str], timeout: int = 600) -> Dict[str, Any]:
             "stderr": result.stderr,
         }
     except FileNotFoundError:
-        return {"returncode": 127, "stdout": "", "stderr": "apt-get not found (not a Debian/Raspberry Pi system)"}
+        return {"returncode": 127, "stdout": "", "stderr": "apt-get not found (not a Debian/Raspberry Pi system or apt not mounted in container)"}
     except subprocess.TimeoutExpired:
         return {"returncode": 124, "stdout": "", "stderr": f"Timeout after {timeout}s"}
     except Exception as e:
@@ -1215,7 +1219,9 @@ async def system_reboot(payload: dict = Depends(verify_token)):
     async def do_reboot():
         await asyncio.sleep(5)
         try:
-            subprocess.Popen(["sudo", "-n", "/sbin/reboot"])
+            # Container runs as root with privileged:true, no sudo needed.
+            # /sbin/reboot is mounted from host in docker-compose.yml.
+            subprocess.Popen(["/sbin/reboot"])
         except Exception as e:
             print(f"Reboot failed: {e}")
 

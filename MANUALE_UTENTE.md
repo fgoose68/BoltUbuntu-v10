@@ -571,9 +571,9 @@ sed -i 's/old-name/new-name/g' docker-compose.yml
 
 ## 8. Configurazione Sudoers per System Updates
 
-> 🔴 **OBBLIGATORIO** per far funzionare il tab System Updates. Da eseguire **una sola volta** sul Raspberry Pi (NON dentro al container Docker).
+> ℹ️ **AGGIORNAMENTO Ver.4Mag2026 (post-deploy)**: la configurazione sudoers descritta sotto **NON è più necessaria** se il `docker-compose.yml` include `privileged: true` per il backend (default a partire da Ver.4Mag2026). Il container gira come root e accede direttamente ai binari `apt-get` e `reboot` montati dall'host. Questa sezione è mantenuta solo come riferimento storico o per chi preferisce eseguire il backend senza `privileged: true` (richiede modifiche al codice).
 
-### 8.1 Perché serve
+### 8.1 Perché serve (solo modalità non-privileged)
 Il tab System Updates esegue comandi privilegiati (`apt-get upgrade`, `reboot`) dal container backend. Affinché possa farlo senza richiedere password ogni volta, il sistema operativo del Raspberry Pi deve autorizzarli tramite `sudoers`.
 
 ### 8.2 Step 1 — Crea il file sudoers
