@@ -25,6 +25,9 @@ services:
     container_name: BoltDashPi5-frontend
     ports:
       - "3050:3050"
+    environment:
+      - VITE_PORT=3050
+      - VITE_PROXY_TARGET=http://backend:8001
     depends_on:
       - backend
     restart: unless-stopped
