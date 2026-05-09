@@ -1058,7 +1058,11 @@ def _format_uptime() -> str:
 
 def _kernel_version() -> str:
     try:
-        result = subprocess.run(["uname", "-r"], capture_output=True, text=True, timeout=5)
+        if _in_container():
+            cmd = ["nsenter", "-t", "1", "-m", "-u", "-n", "-i", "--", "uname", "-r"]
+        else:
+            cmd = ["uname", "-r"]
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=5)
         return result.stdout.strip() or "N/A"
     except Exception:
         return "N/A"
@@ -1091,15 +1095,29 @@ def system_info(payload: dict = Depends(verify_token)):
     }
 
 
+def _in_container() -> bool:
+    """Detect if we're running inside a Docker container."""
+    return Path("/.dockerenv").exists()
+
+
 def _run_apt(args: List[str], timeout: int = 600) -> Dict[str, Any]:
     """Run apt-get command with non-interactive env. Returns stdout/stderr/returncode.
 
-    The backend container runs as root (privileged: true), so sudo is not needed
-    and is intentionally not installed in the image. We invoke apt-get directly.
+    Strategy:
+    - When running natively on the host (e.g. Raspberry Pi without Docker, or dev env):
+      execute apt-get directly.
+    - When running inside a Docker container (production deploy on Pi):
+      use `nsenter -t 1 -m -u -n -i` to enter the host's namespaces and run
+      the host's apt-get. This requires `privileged: true` and `pid: host` in
+      docker-compose.yml. This avoids library mismatch issues caused by
+      bind-mounting /usr/bin/apt-get.
     """
     env = os.environ.copy()
     env["DEBIAN_FRONTEND"] = "noninteractive"
-    cmd = ["apt-get"] + args
+    if _in_container():
+        cmd = ["nsenter", "-t", "1", "-m", "-u", "-n", "-i", "--", "apt-get"] + args
+    else:
+        cmd = ["apt-get"] + args
     try:
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout, env=env)
         return {
@@ -1107,8 +1125,8 @@ def _run_apt(args: List[str], timeout: int = 600) -> Dict[str, Any]:
             "stdout": result.stdout,
             "stderr": result.stderr,
         }
-    except FileNotFoundError:
-        return {"returncode": 127, "stdout": "", "stderr": "apt-get not found (not a Debian/Raspberry Pi system or apt not mounted in container)"}
+    except FileNotFoundError as e:
+        return {"returncode": 127, "stdout": "", "stderr": f"Command not found: {e}. If running in Docker, ensure 'pid: host' and 'privileged: true' are set in docker-compose.yml"}
     except subprocess.TimeoutExpired:
         return {"returncode": 124, "stdout": "", "stderr": f"Timeout after {timeout}s"}
     except Exception as e:
@@ -1219,9 +1237,11 @@ async def system_reboot(payload: dict = Depends(verify_token)):
     async def do_reboot():
         await asyncio.sleep(5)
         try:
-            # Container runs as root with privileged:true, no sudo needed.
-            # /sbin/reboot is mounted from host in docker-compose.yml.
-            subprocess.Popen(["/sbin/reboot"])
+            if _in_container():
+                # Use nsenter to reboot the host from inside container
+                subprocess.Popen(["nsenter", "-t", "1", "-m", "-u", "-n", "-i", "--", "/sbin/reboot"])
+            else:
+                subprocess.Popen(["/sbin/reboot"])
         except Exception as e:
             print(f"Reboot failed: {e}")
 

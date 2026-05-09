@@ -5,6 +5,7 @@ services:
     build: ./backend
     container_name: BoltDashPi5-backend
     privileged: true
+    pid: "host"
     ports:
       - "8001:8001"
     volumes:
@@ -12,15 +13,6 @@ services:
       - ./backups:/app/backups
       - ./uploads:/app/uploads
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      # System Updates tab (Ver.4Mag2026): mount apt config + cache from host
-      # NB: NON montare /usr/bin/apt-get o /usr/bin/dpkg dall'host: causano
-      # errori di librerie. Il container python:3.11-slim ha già apt-get/dpkg
-      # nativi (Debian Bookworm) e li usa con i sources/cache dell'host.
-      - /etc/apt:/etc/apt
-      - /var/lib/apt:/var/lib/apt
-      - /var/cache/apt:/var/cache/apt
-      - /sbin/reboot:/sbin/reboot:ro
-      - /etc/sudoers.d:/etc/sudoers.d:ro
     environment:
       - JWT_SECRET=raspberry_dashboard_secret_key_2024
       - DOCKER_HOST=unix:///var/run/docker.sock
