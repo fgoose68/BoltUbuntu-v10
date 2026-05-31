@@ -18,32 +18,75 @@
 
 ## 2. Requisiti di Sistema
 
-| Componente | Requisito |
+BoltDashPi5 supporta diverse piattaforme **Debian-based** (Raspberry Pi OS, Ubuntu, Debian) sia su architettura **ARM** che **x86/x86_64**.
+
+### 2.1 Piattaforme testate
+
+| Piattaforma | OS | Architettura | Stato |
+|------------|-----|-------------|-------|
+| Raspberry Pi 5 | Raspberry Pi OS 64-bit | aarch64 (ARM) | ✅ Production |
+| Mac mini Intel (6,2 / i7-3720QM) | Ubuntu 22.04 LTS | x86_64 | ✅ Production |
+| PC generico | Ubuntu 22.04+ / Debian 12+ | x86_64 / aarch64 | ✅ Compatibile |
+
+### 2.2 Requisiti software
+
+| Componente | Requisito minimo |
 |------------|-----------|
-| Hardware | Raspberry Pi 5 |
-| Sistema Operativo | Raspberry Pi OS (64-bit) |
+| Sistema Operativo | Debian 11+, Ubuntu 20.04+, Raspberry Pi OS Bookworm |
 | Docker | Versione 20+ |
-| Docker Compose | Versione 2+ |
-| Porta Backend | 8001 |
-| Porta Frontend | 3050 |
+| Docker Compose | Versione 1.29+ (o plugin v2) |
+| RAM | 1 GB minimo (consigliati 4+ GB per build) |
+| Disco | 2 GB liberi |
+| Porta Backend | 8001 (configurabile via docker-compose.yml) |
+| Porta Frontend | 3050 (configurabile via docker-compose.yml) |
+
+### 2.3 Note specifiche per Mac mini (Intel) + Ubuntu 22.04
+
+- ✅ Container `python:3.11-slim` è **multi-arch**, gira nativamente su x86_64
+- ✅ Sensori temperatura Intel (`coretemp`) supportati via `psutil`
+- ✅ La RAM viene rilevata e scalata automaticamente (testato con 16 GB)
+- ✅ I grafici storici (Andamento Storico) visualizzano CPU/RAM/Disco/Temperatura in tempo reale
+- ⚠️ Il GID del gruppo docker su Ubuntu è solitamente `999` (non `991` come Pi OS): viene rilevato automaticamente da `setup.sh`
 
 ---
 
 ## 3. Installazione
+
+### 3.1 Installazione automatica (consigliata)
 
 ```bash
 # Clona il repository
 git clone https://github.com/USERNAME/BoltDashPi5.git
 cd BoltDashPi5
 
-# Esegui lo script di setup
+# Esegui lo script di setup (auto-rileva OS, GID Docker, IP)
 chmod +x setup.sh
 ./setup.sh
 ```
 
-**Accesso alla Dashboard:**
+Lo script esegue automaticamente:
+1. Crea le cartelle `data/`, `backups/`, `uploads/`
+2. Crea `backend/.env` se mancante
+3. Verifica Docker + Docker Compose
+4. **Rileva il GID del gruppo docker** (Pi=991, Ubuntu=999, etc.) e lo salva in `.env`
+5. Rileva l'OS e l'architettura
+6. Builda e avvia i container
+7. Mostra l'URL di accesso
+
+### 3.2 Installazione manuale
+
+```bash
+# Rileva GID docker
+echo "DOCKER_GID=$(getent group docker | cut -d: -f3)" > .env
+
+# Build e avvio
+docker-compose up -d --build
 ```
-http://IP_RASPBERRY:3050
+
+### 3.3 Accesso alla Dashboard
+
+```
+http://IP_HOST:3050
 ```
 
 **Credenziali di default:**
@@ -60,13 +103,32 @@ Monitora in tempo reale le risorse del sistema:
 
 | Metrica | Descrizione |
 |---------|-------------|
-| **CPU Usage** | Percentuale di utilizzo della CPU |
-| **RAM** | Memoria utilizzata / totale (in GB) |
+| **CPU Usage** | Percentuale di utilizzo della CPU (multicore aggregato) |
+| **RAM** | Memoria utilizzata / totale (in GB) — scala automaticamente fino a 64+ GB |
 | **Disk Space** | Spazio disco utilizzato / totale (in GB) |
-| **Temperature** | Temperatura della CPU in °C |
-| **Network** | IP locale e pubblico |
+| **Temperature** | Temperatura della CPU in °C (Raspberry Pi: thermal_zone0 / Intel: coretemp) |
+| **Network** | IP locale, IP pubblico e interfaccia di rete |
 
-I dati vengono aggiornati automaticamente ogni pochi secondi.
+I dati vengono aggiornati automaticamente ogni 5 secondi.
+
+#### Andamento Storico (Grafici real-time)
+Sotto le card delle metriche correnti, la dashboard mostra **grafici a area** per:
+- 📈 CPU %
+- 📈 RAM %
+- 📈 Disco %
+- 📈 Temperatura °C
+
+Selettore intervallo: **1h / 6h / 24h** (in alto a destra dei grafici).
+I grafici si aggiornano ogni 30 secondi dal database storico (tabella `metrics`).
+
+> 💡 Su sistemi con molta RAM (es. Mac mini 16 GB) i grafici % rendono più immediato l'andamento rispetto ai GB assoluti. I valori assoluti restano visibili nella card RAM.
+
+#### Widget compatto System Updates
+Sempre nel System Monitor è presente un riquadro **🔄 System Updates** che mostra a colpo d'occhio:
+- Numero pacchetti aggiornabili
+- Disponibilità update kernel
+- Data ultimo aggiornamento
+- Stato auto-update scheduler
 
 ---
 

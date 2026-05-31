@@ -2,7 +2,7 @@
 
 echo "=========================================="
 echo "  BoltDashPi5 - Setup Script"
-echo "  Ver.4Mag2026"
+echo "  Ver.4Mag2026 (Pi5 / Ubuntu / Debian)"
 echo "=========================================="
 
 # Crea cartelle necessarie
@@ -28,6 +28,22 @@ if ! command -v docker-compose &> /dev/null; then
 fi
 
 echo "✅ Docker trovato"
+
+# Rileva GID docker (varia tra Raspberry Pi OS, Ubuntu, Debian)
+DOCKER_GID=$(getent group docker | cut -d: -f3)
+if [ -z "$DOCKER_GID" ]; then
+    DOCKER_GID=999
+fi
+echo "🔑 GID gruppo docker rilevato: ${DOCKER_GID}"
+export DOCKER_GID
+
+# Salva GID in file .env per docker-compose
+echo "DOCKER_GID=${DOCKER_GID}" > .env
+
+# Rileva architettura
+ARCH=$(uname -m)
+OS=$(. /etc/os-release && echo "$PRETTY_NAME")
+echo "💻 Sistema: ${OS} (${ARCH})"
 
 # Ferma eventuali container precedenti
 echo "🛑 Pulizia container precedenti..."
