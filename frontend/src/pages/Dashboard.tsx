@@ -37,7 +37,7 @@ export function Dashboard() {
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center">
               <h1 className={`text-xl font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
-                Raspberry Pi Dashboard
+                Ubuntu MacMini Dashboard
               </h1>
             </div>
             <div className="flex items-center gap-4">
@@ -109,6 +109,10 @@ export function Dashboard() {
           {activeTab === 'files' && <FileManager />}
           {activeTab === 'updates' && <SystemUpdates />}
           {activeTab === 'settings' && <Settings />}
+        </div>
+
+        <div className={`mt-8 text-center text-xs font-medium ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>
+          Ver.31.1.Mag2026
         </div>
       </div>
     </div>

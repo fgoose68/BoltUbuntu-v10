@@ -2,7 +2,7 @@
 
 echo "=========================================="
 echo "  BoltDashPi5 - Setup Script"
-echo "  Ver.4Mag2026 (Pi5 / Ubuntu / Debian)"
+echo "  Ver.31.1.Mag2026 (Pi5 / Ubuntu / Debian)"
 echo "=========================================="
 
 # Crea cartelle necessarie

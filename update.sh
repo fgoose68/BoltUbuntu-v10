@@ -2,7 +2,7 @@
 
 echo "=========================================="
 echo "  BoltDashPi5 - Script di Aggiornamento"
-echo "  Ver.4Mag2026"
+echo "  Ver.31.1.Mag2026"
 echo "=========================================="
 echo ""
 

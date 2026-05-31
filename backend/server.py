@@ -1079,13 +1079,58 @@ def _last_update_at() -> Optional[str]:
     return row["created_at"] if row else None
 
 
+def _os_info() -> Dict[str, str]:
+    """Read OS info from /etc/os-release (host's via nsenter when containerized)."""
+    try:
+        if _in_container():
+            result = subprocess.run(
+                ["nsenter", "-t", "1", "-m", "-u", "-n", "-i", "--", "cat", "/etc/os-release"],
+                capture_output=True, text=True, timeout=5
+            )
+            content = result.stdout
+        else:
+            with open("/etc/os-release", "r") as f:
+                content = f.read()
+        data = {}
+        for line in content.splitlines():
+            if "=" in line:
+                k, v = line.split("=", 1)
+                data[k.strip()] = v.strip().strip('"')
+        return {
+            "name": data.get("PRETTY_NAME") or data.get("NAME") or "Unknown",
+            "version": data.get("VERSION") or data.get("VERSION_ID") or "",
+            "id": data.get("ID") or "linux",
+        }
+    except Exception:
+        return {"name": "Unknown", "version": "", "id": "linux"}
+
+
+def _arch() -> str:
+    try:
+        if _in_container():
+            result = subprocess.run(
+                ["nsenter", "-t", "1", "-m", "-u", "-n", "-i", "--", "uname", "-m"],
+                capture_output=True, text=True, timeout=5
+            )
+            return result.stdout.strip()
+        result = subprocess.run(["uname", "-m"], capture_output=True, text=True, timeout=5)
+        return result.stdout.strip()
+    except Exception:
+        return "unknown"
+
+
 @app.get("/api/system/info")
 def system_info(payload: dict = Depends(verify_token)):
     sched = _ensure_scheduler_row()
+    os_data = _os_info()
     return {
         "kernel_version": _kernel_version(),
         "uptime": _format_uptime(),
         "last_update": _last_update_at(),
+        "os_name": os_data["name"],
+        "os_version": os_data["version"],
+        "os_id": os_data["id"],
+        "architecture": _arch(),
         "scheduler": {
             "enabled": bool(sched["enabled"]),
             "interval_hours": sched["interval_hours"],

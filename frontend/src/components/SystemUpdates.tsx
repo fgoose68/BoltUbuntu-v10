@@ -7,6 +7,10 @@ interface SystemInfo {
   kernel_version: string;
   uptime: string;
   last_update: string | null;
+  os_name?: string;
+  os_version?: string;
+  os_id?: string;
+  architecture?: string;
   scheduler: {
     enabled: boolean;
     interval_hours: number;
@@ -182,6 +186,27 @@ export function SystemUpdates() {
       {/* System Info Card */}
       <div className={`${cardBg} rounded-xl p-6 border ${cardBorder}`}>
         <h3 className={`text-xl font-bold ${textPrimary} mb-4`}>Informazioni Sistema</h3>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
+          <div className="md:col-span-2">
+            <p className={`text-sm ${textSecondary}`}>Sistema Operativo</p>
+            <p className={`font-medium ${textPrimary}`}>
+              {systemInfo?.os_name || 'N/A'}
+              {systemInfo?.architecture && (
+                <span className={`ml-2 text-xs px-2 py-0.5 rounded ${theme === 'dark' ? 'bg-slate-700 text-slate-300' : 'bg-slate-200 text-slate-700'}`}>
+                  {systemInfo.architecture}
+                </span>
+              )}
+            </p>
+          </div>
+          <div>
+            <p className={`text-sm ${textSecondary}`}>Package Manager</p>
+            <p className={`font-medium ${textPrimary}`}>
+              {systemInfo?.os_id === 'ubuntu' || systemInfo?.os_id === 'debian' || systemInfo?.os_id === 'raspbian'
+                ? 'APT (.deb)'
+                : 'Sconosciuto'}
+            </p>
+          </div>
+        </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div>
             <p className={`text-sm ${textSecondary}`}>Kernel</p>
@@ -305,6 +330,16 @@ export function SystemUpdates() {
         <h3 className={`text-xl font-bold ${textPrimary} mb-4`}>Aggiornamento Kernel</h3>
         <p className={`${textSecondary} mb-4`}>
           Versione attuale: <strong className={textPrimary}>{systemInfo?.kernel_version}</strong>
+          {systemInfo?.os_id === 'ubuntu' && (
+            <span className={`ml-2 text-xs px-2 py-0.5 rounded ${theme === 'dark' ? 'bg-blue-900/40 text-blue-300' : 'bg-blue-100 text-blue-700'}`}>
+              Ubuntu — apt full-upgrade
+            </span>
+          )}
+          {(systemInfo?.os_id === 'debian' || systemInfo?.os_id === 'raspbian') && (
+            <span className={`ml-2 text-xs px-2 py-0.5 rounded ${theme === 'dark' ? 'bg-red-900/40 text-red-300' : 'bg-red-100 text-red-700'}`}>
+              {systemInfo?.os_id === 'raspbian' ? 'Raspberry Pi OS' : 'Debian'} — apt full-upgrade
+            </span>
+          )}
         </p>
         <button
           onClick={handleKernelUpdate}

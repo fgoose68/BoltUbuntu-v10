@@ -37,7 +37,7 @@ export function Login() {
       <div className="max-w-md w-full bg-slate-800 rounded-2xl shadow-2xl border border-slate-700 p-8 relative">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-white mb-2">
-            Raspberry Pi Dashboard
+            Ubuntu MacMini Dashboard
           </h1>
           <p className="text-slate-400">
             {isRegistering ? 'Create your account' : 'Sign in to continue'}
@@ -123,7 +123,7 @@ export function Login() {
         </div>
 
         <div className="absolute bottom-4 right-6 text-slate-500 text-xs font-medium">
-          Ver.4Mag2026
+          Ver.31.1.Mag2026
         </div>
       </div>
     </div>
