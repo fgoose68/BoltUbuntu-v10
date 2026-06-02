@@ -201,19 +201,13 @@ export function DockerBackups() {
           <div className="flex items-start gap-3">
             <span className="text-2xl">📁</span>
             <div className={theme === 'dark' ? 'text-slate-300' : 'text-slate-700'}>
-              <p className="font-semibold mb-2">Backup Storage Locations:</p>
+              <p className="font-semibold mb-2">Backup Storage Location:</p>
               <div className="space-y-1 text-sm">
                 <p>
                   <span className="font-medium">Local: </span>
                   <code className={`px-2 py-1 rounded ${
                     theme === 'dark' ? 'bg-slate-700 text-green-400' : 'bg-white text-green-600'
                   }`}>~/BoltUbuntu/backups/</code>
-                </p>
-                <p>
-                  <span className="font-medium">NAS: </span>
-                  <code className={`px-2 py-1 rounded ${
-                    theme === 'dark' ? 'bg-slate-700 text-blue-400' : 'bg-white text-blue-600'
-                  }`}>/mnt/nas/backups/</code>
                 </p>
               </div>
             </div>
