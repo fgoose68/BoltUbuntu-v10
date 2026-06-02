@@ -779,7 +779,100 @@ Cerca righe con `Error`, `Exception`, `EADDRINUSE`. Le cause più comuni:
 ### 9.5 Login fallisce con "Network Error"
 
 **Causa:** il frontend non riesce a raggiungere il backend. Vedi sezione 9.1.
-**Test manuale:** dal tuo PC apri `http://<IP-PI>:8001/api/health` — deve rispondere con un JSON `{"status":"ok"}`.
+**Test manuale:** dal tuo PC apri `http://<IP-HOST>:8001/api/health` — deve rispondere con un JSON `{"status":"ok"}`.
+
+### 9.6 Aggiornare l'app dopo `git pull` mantenendo i dati
+
+**Quando**: ogni volta che fai `git pull` da GitHub per ricevere nuove modifiche (es. nuove feature, fix, rinomina container).
+
+**Procedura completa (Ubuntu Mac mini)**:
+```bash
+cd ~/BoltUbuntu
+
+# 1. Salva il database SQLite (contiene utenti, log, scheduler)
+cp data/dashboard.db /tmp/dashboard.db.safe 2>/dev/null
+
+# 2. Sblocca eventuali flag git
+git update-index --no-assume-unchanged data/dashboard.db 2>/dev/null
+git checkout HEAD -- data/dashboard.db 2>/dev/null
+
+# 3. Ferma i container
+docker compose down
+
+# 4. (Solo se i container sono stati rinominati nel docker-compose.yml)
+#    Rimuovi i container vecchi con i nomi precedenti
+docker ps -a --format "{{.Names}}" | grep -iE "BoltDashPi5|BoltUbuntu" | xargs -r docker rm -f
+
+# 5. Pull aggiornamenti
+git fetch origin
+git reset --hard origin/main
+
+# 6. Ripristina il database
+cp /tmp/dashboard.db.safe data/dashboard.db 2>/dev/null
+
+# 7. Verifica nuovi nomi nel docker-compose.yml
+grep "container_name" docker-compose.yml
+
+# 8. Avvia con build (in caso di modifiche al codice)
+docker compose up -d --build
+sleep 25
+
+# 9. Verifica stato
+docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+```
+
+Output atteso (Ver.2.1.Giu2026+):
+```
+NAMES                          STATUS              PORTS
+BoltUbuntuMacmini-backend      Up X seconds        0.0.0.0:8001->8001/tcp
+BoltUbuntuMacmini-frontend     Up X seconds        0.0.0.0:3050->3050/tcp
+```
+
+### 9.7 Conflitto git pull su `data/dashboard.db`
+
+**Sintomo**: `error: Le tue modifiche locali ai seguenti file sarebbero sovrascritte con il merge: data/dashboard.db`
+
+**Causa**: il database SQLite cambia ad ogni login/metrica → git lo vede sempre come modificato.
+
+**Soluzione permanente**:
+```bash
+cd ~/BoltUbuntu
+echo "data/" >> .gitignore
+echo "*.db" >> .gitignore
+echo "*.db.wal" >> .gitignore
+git rm --cached data/dashboard.db 2>/dev/null
+git add .gitignore
+git -c user.email="local@host" -c user.name="local" commit -m "ignore SQLite database"
+```
+Dopo questo, `git pull` non darà più conflitti.
+
+### 9.8 Cambiare nome ai container (rebrand)
+
+Se modifichi `container_name` nel `docker-compose.yml`, Docker **NON rinomina** automaticamente i container esistenti. Devi rimuoverli e ricrearli:
+
+```bash
+cd ~/BoltUbuntu
+
+# Ferma e rimuovi vecchi container per nome
+docker compose down
+docker rm -f BoltDashPi5-backend BoltDashPi5-frontend 2>/dev/null
+
+# Ricrea con i nuovi nomi
+docker compose up -d --build
+
+# Verifica
+docker ps --format "table {{.Names}}\t{{.Status}}"
+```
+
+> 💡 I **volumi** (`./data`, `./backups`, `./uploads`) sono mappati a directory locali, quindi i dati persistono anche quando ricrei i container. Nessuna perdita di dati.
+
+### 9.9 Comando one-liner per aggiornamento completo
+
+Copia-incolla unico per: salvare DB, pull, rebuild, rimozione container vecchi:
+
+```bash
+cd ~/BoltUbuntu && cp data/dashboard.db /tmp/dashboard.db.safe 2>/dev/null && git update-index --no-assume-unchanged data/dashboard.db 2>/dev/null && git checkout HEAD -- data/dashboard.db 2>/dev/null && docker compose down && docker ps -a --format "{{.Names}}" | grep -iE "BoltDashPi5|BoltUbuntu" | xargs -r docker rm -f ; git fetch origin && git reset --hard origin/main && cp /tmp/dashboard.db.safe data/dashboard.db 2>/dev/null && docker compose up -d --build && sleep 25 && docker ps --format "table {{.Names}}\t{{.Status}}"
+```
 
 ---
 
