@@ -3,7 +3,7 @@ version: '3.8'
 services:
   backend:
     build: ./backend
-    container_name: BoltDashPi5-backend
+    container_name: BoltUbuntuMacmini-backend
     privileged: true
     pid: "host"
     ports:
@@ -22,7 +22,7 @@ services:
 
   frontend:
     build: ./frontend
-    container_name: BoltDashPi5-frontend
+    container_name: BoltUbuntuMacmini-frontend
     ports:
       - "3050:3050"
     environment:

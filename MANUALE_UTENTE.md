@@ -273,8 +273,8 @@ BoltDashPi5/
 **Container Docker:**
 | Container | Porta | Descrizione |
 |-----------|-------|-------------|
-| BoltDashPi5-backend | 8001 | API REST FastAPI |
-| BoltDashPi5-frontend | 3050 | Interfaccia Web React |
+| BoltUbuntuMacmini-backend | 8001 | API REST FastAPI |
+| BoltUbuntuMacmini-frontend | 3050 | Interfaccia Web React |
 
 ---
 
@@ -291,10 +291,10 @@ docker-compose down
 docker-compose logs -f
 
 # Log solo backend
-docker logs BoltDashPi5-backend --tail 50
+docker logs BoltUbuntuMacmini-backend --tail 50
 
 # Log solo frontend
-docker logs BoltDashPi5-frontend --tail 50
+docker logs BoltUbuntuMacmini-frontend --tail 50
 
 # Riavvia i servizi
 docker-compose restart
@@ -414,7 +414,7 @@ cd ~/BoltDashPi5
 ### 7.1 Container non si avvia
 ```bash
 # Verifica i log
-docker logs BoltDashPi5-backend
+docker logs BoltUbuntuMacmini-backend
 
 # Ricostruisci
 docker-compose down
@@ -504,8 +504,8 @@ docker-compose up -d
 | Porta Backend | 8001 | 8001 |
 | allowedHosts | true | true |
 | proxy target | localhost:8001 | backend:8001 |
-| container_name frontend | - | BoltDashPi5-frontend |
-| container_name backend | - | BoltDashPi5-backend |
+| container_name frontend | - | BoltUbuntuMacmini-frontend |
+| container_name backend | - | BoltUbuntuMacmini-backend |
 
 **Per passare da un ambiente all'altro:**
 
@@ -528,7 +528,7 @@ sed -i 's/port 3050/port 3000/g' frontend/package.json
 **Verifica Docker:**
 ```bash
 # Testa se Docker funziona nel container
-docker exec BoltDashPi5-backend docker ps
+docker exec BoltUbuntuMacmini-backend docker ps
 ```
 
 **Se Docker non funziona, verifica il GID:**
@@ -552,7 +552,7 @@ docker-compose restart backend
 
 **Verifica log:**
 ```bash
-docker logs BoltDashPi5-frontend --tail 30
+docker logs BoltUbuntuMacmini-frontend --tail 30
 ```
 
 **Cause comuni:**
