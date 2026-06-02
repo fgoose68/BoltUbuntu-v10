@@ -207,7 +207,7 @@ export function DockerBackups() {
                   <span className="font-medium">Local: </span>
                   <code className={`px-2 py-1 rounded ${
                     theme === 'dark' ? 'bg-slate-700 text-green-400' : 'bg-white text-green-600'
-                  }`}>~/BoltDashPi5/backups/</code>
+                  }`}>~/BoltUbuntu/backups/</code>
                 </p>
                 <p>
                   <span className="font-medium">NAS: </span>

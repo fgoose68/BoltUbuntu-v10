@@ -1,6 +1,6 @@
 # BoltDashPi5 - Manuale Utente
 ## Ubuntu MacMini / Raspberry Pi 5 Dashboard
-### Versione 31.1.Mag2026
+### Versione 2.1.Giu2016
 
 ---
 
@@ -216,7 +216,7 @@ Configurazione dell'applicazione.
 - Filtra per tipo di evento
 - Monitora backup, upload, login, errori
 
-### 4.6 System Updates (Ver.31.1.Mag2026)
+### 4.6 System Updates (Ver.2.1.Giu2016)
 
 Tab dedicata alla gestione aggiornamenti OS/Kernel del Raspberry Pi.
 
@@ -320,7 +320,7 @@ cat > ~/BoltDashPi5/update.sh << 'EOF'
 
 echo "=========================================="
 echo "  BoltDashPi5 - Script di Aggiornamento"
-echo "  Ver.31.1.Mag2026"
+echo "  Ver.2.1.Giu2016"
 echo "=========================================="
 echo ""
 
@@ -633,7 +633,7 @@ sed -i 's/old-name/new-name/g' docker-compose.yml
 
 ## 8. Configurazione Sudoers per System Updates
 
-> ℹ️ **AGGIORNAMENTO Ver.31.1.Mag2026 (post-deploy)**: la configurazione sudoers descritta sotto **NON è più necessaria** se il `docker-compose.yml` include `privileged: true` per il backend (default a partire da Ver.31.1.Mag2026). Il container gira come root e accede direttamente ai binari `apt-get` e `reboot` montati dall'host. Questa sezione è mantenuta solo come riferimento storico o per chi preferisce eseguire il backend senza `privileged: true` (richiede modifiche al codice).
+> ℹ️ **AGGIORNAMENTO Ver.2.1.Giu2016 (post-deploy)**: la configurazione sudoers descritta sotto **NON è più necessaria** se il `docker-compose.yml` include `privileged: true` per il backend (default a partire da Ver.2.1.Giu2016). Il container gira come root e accede direttamente ai binari `apt-get` e `reboot` montati dall'host. Questa sezione è mantenuta solo come riferimento storico o per chi preferisce eseguire il backend senza `privileged: true` (richiede modifiche al codice).
 
 ### 8.1 Perché serve (solo modalità non-privileged)
 Il tab System Updates esegue comandi privilegiati (`apt-get upgrade`, `reboot`) dal container backend. Affinché possa farlo senza richiedere password ogni volta, il sistema operativo del Raspberry Pi deve autorizzarli tramite `sudoers`.
@@ -666,7 +666,7 @@ Output atteso:
 Se vedi errori, **NON riavviare nulla** e correggi prima la sintassi (un errore in sudoers può bloccare tutto sudo!).
 
 ### 8.5 Step 4 — Riavvia i container per applicare il nuovo `docker-compose.yml`
-Il file `docker-compose.yml` è già stato aggiornato (Ver.31.1.Mag2026) con `privileged: true` e i mount necessari per `apt`. Quindi:
+Il file `docker-compose.yml` è già stato aggiornato (Ver.2.1.Giu2016) con `privileged: true` e i mount necessari per `apt`. Quindi:
 
 ```bash
 cd ~/BoltDashPi5
@@ -708,7 +708,7 @@ sudo rm /etc/sudoers.d/boltdash-updates
 
 **Causa:** gli script `npm` nel `frontend/package.json` forzano la porta tramite argomenti CLI (`--port 3000`), che hanno **priorità** sul `vite.config.ts`. Risultato: Vite parte sulla porta 3000 dentro al container, ma Docker espone la 3050 → il frontend non è raggiungibile.
 
-**Soluzione (già applicata in Ver.31.1.Mag2026):**
+**Soluzione (già applicata in Ver.2.1.Giu2016):**
 Negli script di `frontend/package.json` rimuovere completamente i flag CLI di porta/host, così Vite legge la configurazione ufficiale da `vite.config.ts`:
 
 ```json
@@ -783,4 +783,4 @@ Cerca righe con `Error`, `Exception`, `EADDRINUSE`. Le cause più comuni:
 
 ---
 
-*Documento generato per BoltDashPi5 Ver.31.1.Mag2026*
+*Documento generato per BoltDashPi5 Ver.2.1.Giu2016*

@@ -33,8 +33,8 @@ export function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
-      <div className="max-w-md w-full bg-slate-800 rounded-2xl shadow-2xl border border-slate-700 p-8 relative">
+    <div className="min-h-screen bg-gradient-to-br from-emerald-900 via-green-800 to-emerald-900 flex items-center justify-center p-4">
+      <div className="max-w-md w-full bg-slate-800 rounded-2xl shadow-2xl border border-emerald-700/50 p-8 relative">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-white mb-2">
             Ubuntu MacMini Dashboard
@@ -123,7 +123,7 @@ export function Login() {
         </div>
 
         <div className="absolute bottom-4 right-6 text-slate-500 text-xs font-medium">
-          Ver.31.1.Mag2026
+          Ver.2.1.Giu2016
         </div>
       </div>
     </div>
