@@ -1,12 +1,14 @@
-# BoltDashPi5 - Manuale Utente
-## Ubuntu MacMini / Raspberry Pi 5 Dashboard
-### Versione 2.1.Giu2026
+# BoltUbuntu - Manuale Utente
+## BoltUbuntu Dashboard
+> 🌍 **Località**: Roma, Italia — **Fuso orario**: Europe/Rome (CEST UTC+2) — Ora: 17:47.
+
+### Versione 6.1Giu2026
 
 ---
 
 ## 1. Introduzione
 
-**BoltDashPi5** è una dashboard web completa per la gestione e il monitoraggio del tuo Raspberry Pi 5. Permette di:
+**BoltUbuntu** è una dashboard web completa per la gestione e il monitoraggio del tuo Raspberry Pi 5. Permette di:
 
 - Monitorare le risorse di sistema (CPU, RAM, Disco, Temperatura)
 - Gestire i container Docker
@@ -18,7 +20,7 @@
 
 ## 2. Requisiti di Sistema
 
-BoltDashPi5 supporta diverse piattaforme **Debian-based** (Raspberry Pi OS, Ubuntu, Debian) sia su architettura **ARM** che **x86/x86_64**.
+BoltUbuntu supporta diverse piattaforme **Debian-based** (Raspberry Pi OS, Ubuntu, Debian) sia su architettura **ARM** che **x86/x86_64**.
 
 ### 2.1 Piattaforme testate
 
@@ -38,7 +40,7 @@ BoltDashPi5 supporta diverse piattaforme **Debian-based** (Raspberry Pi OS, Ubun
 | RAM | 1 GB minimo (consigliati 4+ GB per build) |
 | Disco | 2 GB liberi |
 | Porta Backend | 8001 (configurabile via docker-compose.yml) |
-| Porta Frontend | 3050 (configurabile via docker-compose.yml) |
+| Porta Frontend | 3061
 
 ### 2.3 Note specifiche per Mac mini (Intel) + Ubuntu 22.04
 
@@ -56,8 +58,8 @@ BoltDashPi5 supporta diverse piattaforme **Debian-based** (Raspberry Pi OS, Ubun
 
 ```bash
 # Clona il repository
-git clone https://github.com/USERNAME/BoltDashPi5.git
-cd BoltDashPi5
+git clone https://github.com/USERNAME/BoltUbuntu.git
+cd BoltUbuntu
 
 # Esegui lo script di setup (auto-rileva OS, GID Docker, IP)
 chmod +x setup.sh
@@ -138,7 +140,7 @@ Gestione completa dei backup dei container Docker.
 
 **Funzionalità:**
 - ✅ Visualizzazione di tutti i container Docker
-- ✅ Backup su storage locale (`~/BoltDashPi5/backups/`)
+- ✅ Backup su storage locale (`~/BoltUbuntu/backups/`)
 - ✅ Backup su NAS (`/mnt/nas/backups/`)
 - ✅ Eliminazione dei backup non più necessari
 - ✅ Visualizzazione stato backup (running, completed, failed)
@@ -193,8 +195,8 @@ Gestione dei file Office sul Raspberry Pi.
 - Visualizzazione informazioni (dimensione, data upload)
 
 **Percorsi di storage:**
-- **Local:** `~/BoltDashPi5/uploads/`
-- **NAS:** `/mnt/nas/office/`
+- **Local:** `~/BoltUbuntu/uploads/`
+- **NAS:** `/mnt/nas/office/` NON attivo!
 
 ---
 
@@ -216,7 +218,7 @@ Configurazione dell'applicazione.
 - Filtra per tipo di evento
 - Monitora backup, upload, login, errori
 
-### 4.6 System Updates (Ver.2.1.Giu2026)
+### 4.6 System Updates (Ver.6.1Giu2026)
 
 Tab dedicata alla gestione aggiornamenti OS/Kernel del Raspberry Pi.
 
@@ -251,7 +253,7 @@ La barra di avanzamento mostra `tempo trascorso / tempo stimato` (formula: 5s ba
 ## 5. Architettura Tecnica
 
 ```
-BoltDashPi5/
+BoltUbuntu/
 ├── backend/              # API Python FastAPI
 │   ├── server.py         # Server principale
 │   ├── requirements.txt  # Dipendenze Python
@@ -273,8 +275,8 @@ BoltDashPi5/
 **Container Docker:**
 | Container | Porta | Descrizione |
 |-----------|-------|-------------|
-| BoltUbuntuMacmini-backend | 8001 | API REST FastAPI |
-| BoltUbuntuMacmini-frontend | 3050 | Interfaccia Web React |
+| BoltUbuntu-backend | 8001 | API REST FastAPI |
+| BoltUbuntu-frontend | 3051 | Interfaccia Web React |
 
 ---
 
@@ -291,10 +293,10 @@ docker-compose down
 docker-compose logs -f
 
 # Log solo backend
-docker logs BoltUbuntuMacmini-backend --tail 50
+docker logs BoltUbuntu-backend --tail 50
 
 # Log solo frontend
-docker logs BoltUbuntuMacmini-frontend --tail 50
+docker logs BoltUbuntu-frontend --tail 50
 
 # Riavvia i servizi
 docker-compose restart
@@ -310,22 +312,22 @@ docker-compose ps
 
 ## 6.1 Script di Aggiornamento
 
-Per aggiornare facilmente BoltDashPi5 con le ultime modifiche da GitHub, usa lo script `update.sh`.
+Per aggiornare facilmente BoltUbuntu con le ultime modifiche da GitHub, usa lo script `update.sh`.
 
 **Creazione dello script (da eseguire una sola volta):**
 
 ```bash
-cat > ~/BoltDashPi5/update.sh << 'EOF'
+cat > ~/BoltUbuntu/update.sh << 'EOF'
 #!/bin/bash
 
 echo "=========================================="
-echo "  BoltDashPi5 - Script di Aggiornamento"
-echo "  Ver.2.1.Giu2026"
+echo "  BoltUbuntu - Script di Aggiornamento"
+echo "  Ver.6.1Giu2026"
 echo "=========================================="
 echo ""
 
 # Vai nella cartella del progetto
-cd ~/BoltDashPi5 || { echo "❌ Cartella ~/BoltDashPi5 non trovata!"; exit 1; }
+cd ~/BoltUbuntu || { echo "❌ Cartella ~/BoltUbuntu non trovata!"; exit 1; }
 
 echo "📂 Cartella: $(pwd)"
 echo ""
@@ -385,18 +387,18 @@ echo "=========================================="
 echo "  ✅ AGGIORNAMENTO COMPLETATO!"
 echo "=========================================="
 echo ""
-echo "  🌐 Dashboard: http://$(hostname -I | awk '{print $1}'):3050"
+echo "  🌐 Dashboard: http://$(hostname -I | awk '{print $1}'):3061"
 echo ""
 echo "=========================================="
 EOF
 
-chmod +x ~/BoltDashPi5/update.sh
+chmod +x ~/BoltUbuntu/update.sh
 ```
 
 **Uso dello script:**
 
 ```bash
-cd ~/BoltDashPi5
+cd ~/BoltUbuntu
 ./update.sh
 ```
 
@@ -414,7 +416,7 @@ cd ~/BoltDashPi5
 ### 7.1 Container non si avvia
 ```bash
 # Verifica i log
-docker logs BoltUbuntuMacmini-backend
+docker logs BoltUbuntu-backend
 
 # Ricostruisci
 docker-compose down
@@ -443,7 +445,7 @@ Questo errore indica che il database ha uno schema vecchio incompatibile con il 
 
 **Soluzione:**
 ```bash
-cd ~/BoltDashPi5
+cd ~/BoltUbuntu
 
 # Ferma i container
 docker-compose down
@@ -480,7 +482,7 @@ Se la porta 3050 o 8001 è già occupata da un'altra applicazione:
 ```bash
 sudo netstat -tlnp | grep -E "3050|8001"
 # oppure
-sudo lsof -i :3050
+sudo lsof -i :3061
 sudo lsof -i :8001
 ```
 
@@ -500,17 +502,17 @@ docker-compose up -d
 
 | Impostazione | Emergent Preview | Raspberry Pi |
 |--------------|------------------|--------------|
-| Porta Frontend | 3000 | 3050 |
+| Porta Frontend | 3061
 | Porta Backend | 8001 | 8001 |
 | allowedHosts | true | true |
 | proxy target | localhost:8001 | backend:8001 |
-| container_name frontend | - | BoltUbuntuMacmini-frontend |
-| container_name backend | - | BoltUbuntuMacmini-backend |
+| container_name frontend | - | BoltUbuntu-frontend |
+| container_name backend | - | BoltUbuntu-backend |
 
 **Per passare da un ambiente all'altro:**
 
 ```bash
-# Per Raspberry Pi (porta 3050)
+# Per Ubuntu MacMini (porta 3051)
 sed -i 's/port: 3000/port: 3050/g' frontend/vite.config.ts
 sed -i 's/port 3000/port 3050/g' frontend/package.json
 
@@ -528,7 +530,7 @@ sed -i 's/port 3050/port 3000/g' frontend/package.json
 **Verifica Docker:**
 ```bash
 # Testa se Docker funziona nel container
-docker exec BoltUbuntuMacmini-backend docker ps
+docker exec BoltUbuntu-backend docker ps
 ```
 
 **Se Docker non funziona, verifica il GID:**
@@ -552,7 +554,7 @@ docker-compose restart backend
 
 **Verifica log:**
 ```bash
-docker logs BoltUbuntuMacmini-frontend --tail 30
+docker logs BoltUbuntu-frontend --tail 30
 ```
 
 **Cause comuni:**
@@ -583,9 +585,9 @@ docker-compose up -d
 
 ## 9. Note per Sviluppatori
 
-### Modifiche su Raspberry Pi
+### Modifiche su Ubuntu MacMini
 
-Quando si lavora direttamente sul Raspberry Pi, è più efficiente utilizzare comandi diretti invece di passare per Git:
+Quando si lavora direttamente sul Ubutnut Macmini, è più efficiente utilizzare comandi diretti invece di passare per Git:
 
 ```bash
 # Modificare testo in un file
@@ -625,25 +627,25 @@ sed -i 's/old-name/new-name/g' docker-compose.yml
 
 ## 11. Contatti e Supporto
 
-**Repository:** https://github.com/USERNAME/BoltDashPi5
+**Repository:** https://github.com/USERNAME/BoltUbuntu
 
-**Autore:** Sviluppato con assistenza di Emergent AI
+**Autore:** Sviluppato con assistenza di Emergent AI e Fabrizio.
 
 ---
 
 ## 8. Configurazione Sudoers per System Updates
 
-> ℹ️ **AGGIORNAMENTO Ver.2.1.Giu2026 (post-deploy)**: la configurazione sudoers descritta sotto **NON è più necessaria** se il `docker-compose.yml` include `privileged: true` per il backend (default a partire da Ver.2.1.Giu2026). Il container gira come root e accede direttamente ai binari `apt-get` e `reboot` montati dall'host. Questa sezione è mantenuta solo come riferimento storico o per chi preferisce eseguire il backend senza `privileged: true` (richiede modifiche al codice).
+> ℹ️ **AGGIORNAMENTO Ver.6.1Giu2026 (post-deploy)**: la configurazione sudoers descritta sotto **NON è più necessaria** se il `docker-compose.yml` include `privileged: true` per il backend (default a partire da Ver.6.1Giu2026). Il container gira come root e accede direttamente ai binari `apt-get` e `reboot` montati dall'host. Questa sezione è mantenuta solo come riferimento storico o per chi preferisce eseguire il backend senza `privileged: true` (richiede modifiche al codice).
 
 ### 8.1 Perché serve (solo modalità non-privileged)
 Il tab System Updates esegue comandi privilegiati (`apt-get upgrade`, `reboot`) dal container backend. Affinché possa farlo senza richiedere password ogni volta, il sistema operativo del Raspberry Pi deve autorizzarli tramite `sudoers`.
 
 ### 8.2 Step 1 — Crea il file sudoers
-Apri un terminale sul Raspberry Pi (via SSH o direttamente) ed esegui:
+Apri un terminale sul Ubuntu Macmini (via SSH o direttamente) ed esegui:
 
 ```bash
 sudo tee /etc/sudoers.d/boltdash-updates > /dev/null <<'EOF'
-# BoltDashPi5 - autorizzazioni per System Updates tab
+# BoltUbuntu - autorizzazioni per System Updates tab
 root ALL=(ALL) NOPASSWD: /usr/bin/apt-get
 root ALL=(ALL) NOPASSWD: /sbin/reboot
 root ALL=(ALL) NOPASSWD: /sbin/shutdown
@@ -666,17 +668,17 @@ Output atteso:
 Se vedi errori, **NON riavviare nulla** e correggi prima la sintassi (un errore in sudoers può bloccare tutto sudo!).
 
 ### 8.5 Step 4 — Riavvia i container per applicare il nuovo `docker-compose.yml`
-Il file `docker-compose.yml` è già stato aggiornato (Ver.2.1.Giu2026) con `privileged: true` e i mount necessari per `apt`. Quindi:
+Il file `docker-compose.yml` è già stato aggiornato (Ver.6.1Giu2026) con `privileged: true` e i mount necessari per `apt`. Quindi:
 
 ```bash
-cd ~/BoltDashPi5
+cd ~/BoltUbuntu
 git pull origin main          # scarica le modifiche da GitHub
 docker-compose down
 docker-compose up -d --build
 ```
 
 ### 8.6 Step 5 — Test
-1. Apri la dashboard → `http://<IP-PI>:3050`
+1. Apri la dashboard → `http://<IP-PI>:3061`
 2. Login (`admin@dashboard.local` / `admin123`)
 3. Vai sul tab **🔄 System Updates**
 4. Clicca **"Controlla Aggiornamenti"**
@@ -704,11 +706,11 @@ sudo rm /etc/sudoers.d/boltdash-updates
 
 ### 9.1 Frontend non raggiungibile sulla porta 3050
 
-**Sintomo:** dopo `docker-compose up -d` i container risultano `Up`, ma aprendo `http://<IP-PI>:3050` il browser dà "Impossibile raggiungere il sito" o timeout.
+**Sintomo:** dopo `docker-compose up -d` i container risultano `Up`, ma aprendo `http://<IP-PI>:3061` il browser dà "Impossibile raggiungere il sito" o timeout.
 
 **Causa:** gli script `npm` nel `frontend/package.json` forzano la porta tramite argomenti CLI (`--port 3000`), che hanno **priorità** sul `vite.config.ts`. Risultato: Vite parte sulla porta 3000 dentro al container, ma Docker espone la 3050 → il frontend non è raggiungibile.
 
-**Soluzione (già applicata in Ver.2.1.Giu2026):**
+**Soluzione (già applicata in Ver.6.1Giu2026):**
 Negli script di `frontend/package.json` rimuovere completamente i flag CLI di porta/host, così Vite legge la configurazione ufficiale da `vite.config.ts`:
 
 ```json
@@ -720,7 +722,7 @@ Negli script di `frontend/package.json` rimuovere completamente i flag CLI di po
 }
 ```
 
-Poi nel `vite.config.ts` impostare la porta corretta (3050 per il Pi):
+Poi nel `vite.config.ts` impostare la porta corretta (3050 per il Ubuntu):
 
 ```ts
 server: {
@@ -740,7 +742,7 @@ server: {
 
 Dopo aver salvato:
 ```bash
-cd ~/BoltDashPi5
+cd ~/BoltUbuntu
 docker-compose down
 docker-compose up -d --build frontend
 ```
@@ -755,7 +757,7 @@ docker-compose up -d --build frontend
 **Causa:** Docker usa la cache delle build precedenti.
 **Soluzione:** rebuild completo senza cache:
 ```bash
-cd ~/BoltDashPi5
+cd ~/BoltUbuntu
 docker-compose down
 docker images | grep -i boltdash | awk '{print $3}' | xargs -r docker rmi -f
 docker builder prune -af
@@ -772,7 +774,7 @@ docker-compose logs --tail=50 backend
 docker-compose logs --tail=50 frontend
 ```
 Cerca righe con `Error`, `Exception`, `EADDRINUSE`. Le cause più comuni:
-- Porta occupata: `sudo lsof -i :3050` o `:8001` per identificare il processo
+- Porta occupata: `sudo lsof -i :3061` o `:8001` per identificare il processo
 - File mancanti: `git status` per verificare lo stato del repository
 - Permessi cartelle: `sudo chown -R 1000:1000 data backups uploads`
 
@@ -801,7 +803,7 @@ docker compose down
 
 # 4. (Solo se i container sono stati rinominati nel docker-compose.yml)
 #    Rimuovi i container vecchi con i nomi precedenti
-docker ps -a --format "{{.Names}}" | grep -iE "BoltDashPi5|BoltUbuntu" | xargs -r docker rm -f
+docker ps -a --format "{{.Names}}" | grep -iE "BoltUbuntu|BoltUbuntu" | xargs -r docker rm -f
 
 # 5. Pull aggiornamenti
 git fetch origin
@@ -821,11 +823,11 @@ sleep 25
 docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
 ```
 
-Output atteso (Ver.2.1.Giu2026+):
+Output atteso (Ver.6.1Giu2026+):
 ```
 NAMES                          STATUS              PORTS
-BoltUbuntuMacmini-backend      Up X seconds        0.0.0.0:8001->8001/tcp
-BoltUbuntuMacmini-frontend     Up X seconds        0.0.0.0:3050->3050/tcp
+BoltUbuntu-backend      Up X seconds        0.0.0.0:8001->8001/tcp
+BoltUbuntu-frontend     Up X seconds        0.0.0.0:3061->3050/tcp
 ```
 
 ### 9.7 Conflitto git pull su `data/dashboard.db`
@@ -855,7 +857,7 @@ cd ~/BoltUbuntu
 
 # Ferma e rimuovi vecchi container per nome
 docker compose down
-docker rm -f BoltDashPi5-backend BoltDashPi5-frontend 2>/dev/null
+docker rm -f BoltUbuntu-backend BoltUbuntu-frontend 2>/dev/null
 
 # Ricrea con i nuovi nomi
 docker compose up -d --build
@@ -871,9 +873,43 @@ docker ps --format "table {{.Names}}\t{{.Status}}"
 Copia-incolla unico per: salvare DB, pull, rebuild, rimozione container vecchi:
 
 ```bash
-cd ~/BoltUbuntu && cp data/dashboard.db /tmp/dashboard.db.safe 2>/dev/null && git update-index --no-assume-unchanged data/dashboard.db 2>/dev/null && git checkout HEAD -- data/dashboard.db 2>/dev/null && docker compose down && docker ps -a --format "{{.Names}}" | grep -iE "BoltDashPi5|BoltUbuntu" | xargs -r docker rm -f ; git fetch origin && git reset --hard origin/main && cp /tmp/dashboard.db.safe data/dashboard.db 2>/dev/null && docker compose up -d --build && sleep 25 && docker ps --format "table {{.Names}}\t{{.Status}}"
+cd ~/BoltUbuntu && cp data/dashboard.db /tmp/dashboard.db.safe 2>/dev/null && git update-index --no-assume-unchanged data/dashboard.db 2>/dev/null && git checkout HEAD -- data/dashboard.db 2>/dev/null && docker compose down && docker ps -a --format "{{.Names}}" | grep -iE "BoltUbuntu|BoltUbuntu" | xargs -r docker rm -f ; git fetch origin && git reset --hard origin/main && cp /tmp/dashboard.db.safe data/dashboard.db 2>/dev/null && docker compose up -d --build && sleep 25 && docker ps --format "table {{.Names}}\t{{.Status}}"
 ```
 
----
+Docker compose.yml al 5 giugno 2026 ---
 
-*Documento generato per BoltDashPi5 Ver.2.1.Giu2026*
+services:
+  backend:
+    build: ./backend
+    container_name: BoltUbuntu-backend
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./data:/app/data
+      - ./backups:/app/backups
+      - ./uploads:/app/uploads
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      - JWT_SECRET=raspberry_dashboard_secret_key_2024
+      - DOCKER_HOST=unix:///var/run/docker.sock
+    group_add:
+      - "${DOCKER_GID:-999}"
+    restart: unless-stopped
+
+  frontend:
+    build: ./frontend
+    container_name: BoltUbuntu-frontend
+    ports:
+      - "3061:3050"
+    environment:
+      - VITE_PORT=3050
+      - VITE_PROXY_TARGET=http://backend:8001
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+
+
+
+
+*Documento generato per BoltUbuntu Ver.6.1Giu2026*

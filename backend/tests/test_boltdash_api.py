@@ -1,5 +1,5 @@
 """
-BoltDashPi5 - Backend API regression tests.
+BoltUbuntu - Backend API regression tests.
 Covers: auth, health, metrics, docker (dockerAvailable=false expected), files, settings,
 notifications, and the new System Updates endpoints (kernel, scheduler, history, check-updates).
 NOTE: We DO NOT call the destructive endpoints (/api/system/update, /api/system/kernel-update,

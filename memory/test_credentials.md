@@ -1,4 +1,4 @@
-# Test Credentials - BoltDashPi5
+# Test Credentials - BoltUbuntu
 
 ## Admin User
 - **Email**: admin@dashboard.local
@@ -12,7 +12,7 @@
 
 ## Login Endpoint
 ```bash
-curl -X POST http://localhost:3050/api/auth/login \
+curl -X POST http://localhost:3061/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"admin@dashboard.local","password":"admin123"}'
 ```

@@ -37,7 +37,7 @@ export function Dashboard() {
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center">
               <h1 className={`text-xl font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
-                Ubuntu MacMini Dashboard
+                BoltUbuntu Dashboard
               </h1>
             </div>
             <div className="flex items-center gap-4">
@@ -112,7 +112,7 @@ export function Dashboard() {
         </div>
 
         <div className={`mt-8 text-center text-xs font-medium ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>
-          Ver.2.1.Giu2026
+          Ver.6.1Giu2026
         </div>
       </div>
     </div>

@@ -117,7 +117,7 @@ Configurazione predefinita (già ottimizzata):
 ```env
 DUCKDB_PATH=./data/dashboard.db
 JWT_SECRET=                    # Lascia vuoto, verrà generato automaticamente
-VITE_API_URL=http://localhost:3050/api
+VITE_API_URL=http://localhost:3061/api
 BACKEND_PORT=3050
 ```
 
@@ -200,7 +200,7 @@ echo "192.168.1.100:/volume1/backups /mnt/nas nfs defaults 0 0" | sudo tee -a /e
 docker-compose ps
 
 # Dovresti vedere:
-# raspberry-dashboard   running   0.0.0.0:3050->3050/tcp
+# raspberry-dashboard   running   0.0.0.0:3061->3050/tcp
 # dashboard-nginx       running   0.0.0.0:3051->80/tcp
 ```
 
@@ -216,9 +216,9 @@ docker-compose logs -f dashboard
 ### 5.3 Accedi alla Dashboard
 
 Apri il browser e vai a uno di questi indirizzi:
-- `http://localhost:3050` (se sul Raspberry Pi)
-- `http://raspberry-pi.local:3050` (da altro computer sulla stessa rete)
-- `http://192.168.1.xxx:3050` (usa l'IP del tuo Raspberry Pi)
+- `http://localhost:3061` (se sul Raspberry Pi)
+- `http://raspberry-pi.local:3061` (da altro computer sulla stessa rete)
+- `http://192.168.1.xxx:3061` (usa l'IP del tuo Raspberry Pi)
 
 Per trovare l'IP:
 ```bash
@@ -323,7 +323,7 @@ Per ora, puoi creare backup pianificati manualmente:
 crontab -e
 
 # Aggiungi questa riga:
-0 2 * * * curl -X POST -H "Authorization: Bearer YOUR_JWT_TOKEN" http://localhost:3050/api/docker/backup/CONTAINER_ID
+0 2 * * * curl -X POST -H "Authorization: Bearer YOUR_JWT_TOKEN" http://localhost:3061/api/docker/backup/CONTAINER_ID
 ```
 
 ### 8.2 Reverse Proxy con HTTPS

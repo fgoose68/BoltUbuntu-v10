@@ -1,7 +1,7 @@
-# BoltDashPi5 - Raspberry Pi Dashboard PRD
+# BoltUbuntu - Raspberry Pi Dashboard PRD
 
 ## Problem Statement
-Verificare il corretto funzionamento del progetto BoltDashPi5 da GitHub - una Dashboard Web per Raspberry Pi per gestire backup Docker, file Office e monitoraggio hardware.
+Verificare il corretto funzionamento del progetto BoltUbuntu da GitHub - una Dashboard Web per Raspberry Pi per gestire backup Docker, file Office e monitoraggio hardware.
 
 ## Architecture
 - **Frontend**: React 18 + TypeScript + Vite 8 + TailwindCSS (in `/app/frontend`)

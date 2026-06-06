@@ -1,18 +1,29 @@
 #!/bin/bash
 
 echo "=========================================="
-echo "  BoltDashPi5 - Setup Script"
-echo "  Ver.2.1.Giu2026 (Pi5 / Ubuntu / Debian)"
+echo "  BoltUbuntu - Setup Script"
+echo "  Ver.6.1Giu2026 (Ubuntu / Debian / ARM / x86_64)"
 echo "=========================================="
+
+TZ="Europe/Rome"
+export TZ
+
+echo "📍 Località: Roma, Italia | Fuso orario: $(date '+%Z') | Ora: $(date '+%H:%M')"
 
 # Crea cartelle necessarie
 echo "📁 Creazione cartelle..."
 mkdir -p data backups uploads
 
 # Crea file .env se non esiste
+if [ ! -f ".env" ]; then
+    echo "📝 Generazione file .env..."
+    echo "DOCKER_GID=${DOCKER_GID}" > .env
+    echo "JWT_SECRET=$(openssl rand -hex 32)" >> .env
+    echo "TZ=Europe/Rome" >> .env
+    echo "CORS_ORIGINS=http://localhost:3061,http://127.0.0.1:3061" >> .env
+fi
 if [ ! -f "backend/.env" ]; then
-    echo "📝 Creazione file .env backend..."
-    echo "JWT_SECRET=raspberry_dashboard_secret_key_2024" > backend/.env
+    echo "JWT_SECRET=$(openssl rand -hex 32)" > backend/.env
 fi
 
 # Verifica Docker
@@ -69,11 +80,13 @@ echo "  ✅ INSTALLAZIONE COMPLETATA!"
 echo "=========================================="
 echo ""
 echo "  🌐 Accedi alla dashboard:"
-echo "     http://${LOCAL_IP}:3050"
+echo "     http://${LOCAL_IP}:3061"
 echo ""
-echo "  👤 Credenziali:"
+echo "  👤 Credenziali di default (CAMBIA SUBITO):"
 echo "     Email:    admin@dashboard.local"
 echo "     Password: admin123"
+echo ""
+echo "  📍 Località: Roma | TZ: $(date '+%Z') | Ora: $(date '+%H:%M')"
 echo ""
 echo "  📋 Comandi utili:"
 echo "     docker-compose logs -f    # Visualizza log"

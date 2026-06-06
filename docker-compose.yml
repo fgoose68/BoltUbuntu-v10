@@ -1,11 +1,10 @@
-version: '3.8'
-
 services:
   backend:
     build: ./backend
-    container_name: BoltUbuntuMacmini-backend
+    container_name: BoltUbuntu-backend
+    env_file: .env
     privileged: true
-    pid: "host"
+    pid: host
     ports:
       - "8001:8001"
     volumes:
@@ -13,21 +12,30 @@ services:
       - ./backups:/app/backups
       - ./uploads:/app/uploads
       - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /usr/bin/apt-get:/usr/bin/apt-get
+      - /etc/apt:/etc/apt
+      - /var/lib/apt:/var/lib/apt
+      - /var/lib/dpkg:/var/lib/dpkg
+      - /var/cache/apt:/var/cache/apt
+      - /sbin/reboot:/sbin/reboot
     environment:
-      - JWT_SECRET=raspberry_dashboard_secret_key_2024
+      - JWT_SECRET=${JWT_SECRET:-changeme}
       - DOCKER_HOST=unix:///var/run/docker.sock
+      - TZ=Europe/Rome
     group_add:
       - "${DOCKER_GID:-999}"
     restart: unless-stopped
 
   frontend:
     build: ./frontend
-    container_name: BoltUbuntuMacmini-frontend
+    container_name: BoltUbuntu-frontend
+    env_file: .env
     ports:
-      - "3050:3050"
+      - "3061:3050"
     environment:
       - VITE_PORT=3050
       - VITE_PROXY_TARGET=http://backend:8001
+      - TZ=Europe/Rome
     depends_on:
       - backend
     restart: unless-stopped

@@ -5,8 +5,8 @@ import sys
 import json
 from datetime import datetime
 
-class BoltDashPi5APITester:
-    def __init__(self, base_url="http://localhost:3050"):
+class BoltUbuntuAPITester:
+    def __init__(self, base_url="http://localhost:3061"):
         self.base_url = base_url
         self.token = None
         self.tests_run = 0
@@ -231,7 +231,7 @@ class BoltDashPi5APITester:
 
     def run_all_tests(self):
         """Run comprehensive test suite"""
-        print("🚀 Starting BoltDashPi5 API Test Suite")
+        print("🚀 Starting BoltUbuntu API Test Suite")
         print("=" * 50)
         
         # Test health endpoint first
@@ -286,7 +286,7 @@ class BoltDashPi5APITester:
             print(f"❌ Failed to save results: {e}")
 
 def main():
-    tester = BoltDashPi5APITester()
+    tester = BoltUbuntuAPITester()
     exit_code = tester.run_all_tests()
     tester.save_results()
     return exit_code

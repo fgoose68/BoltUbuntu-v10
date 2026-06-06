@@ -1,13 +1,13 @@
 #!/bin/bash
 
 echo "=========================================="
-echo "  BoltDashPi5 - Script di Aggiornamento"
-echo "  Ver.2.1.Giu2026"
+echo "  BoltUbuntu - Script di Aggiornamento"
+echo "  Ver.6.1Giu2026"
 echo "=========================================="
 echo ""
 
 # Vai nella cartella del progetto
-cd ~/BoltDashPi5 || { echo "❌ Cartella ~/BoltDashPi5 non trovata!"; exit 1; }
+cd ~/BoltUbuntu || { echo "❌ Cartella ~/BoltUbuntu non trovata!"; exit 1; }
 
 echo "📂 Cartella: $(pwd)"
 echo ""
@@ -67,6 +67,6 @@ echo "=========================================="
 echo "  ✅ AGGIORNAMENTO COMPLETATO!"
 echo "=========================================="
 echo ""
-echo "  🌐 Dashboard: http://$(hostname -I | awk '{print $1}'):3050"
+echo "  🌐 Dashboard: http://$(hostname -I | awk '{print $1}'):3061"
 echo ""
 echo "=========================================="

@@ -18,22 +18,46 @@ from pathlib import Path
 import asyncio
 import json
 
-app = FastAPI(title="Raspberry Pi Dashboard API")
+import os
+import pytz
+ROME_TZ = pytz.timezone('Europe/Rome')
+
+
+def _utc_now_fmt():
+    return datetime.utcnow().isoformat() + "Z"
+
+def _fix_dates(row: dict) -> dict:
+    for k in ("created_at", "timestamp", "updated_at", "completed_at", "last_run", "checked_at"):
+        v = row.get(k)
+        if v and isinstance(v, str) and not v.endswith("Z") and "T" in v:
+            row[k] = v + "Z"
+    return row
+
+app = FastAPI(title="BoltUbuntu Dashboard API")
 
 # CORS
+CORS_ORIGINS = os.environ.get("CORS_ORIGINS", "http://localhost:3061,http://127.0.0.1:3061").split(",")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[o.strip() for o in CORS_ORIGINS if o.strip()],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 # Config
-JWT_SECRET = os.environ.get("JWT_SECRET", "raspberry_dashboard_secret_key_2024")
-DB_PATH = Path("/app/data/dashboard.db")
-BACKUP_PATH = Path("/app/backups")
-UPLOAD_PATH = Path("/app/uploads/office")
+JWT_SECRET = os.environ.get("JWT_SECRET", os.urandom(32).hex())
+
+# Local dev mode: if /app doesn't exist (not in Docker), use local paths
+if os.environ.get("DEV_MODE") == "1" or not Path("/app").exists():
+    _BASE = Path(__file__).resolve().parent
+    DB_PATH = _BASE / "data" / "dashboard.db"
+    BACKUP_PATH = _BASE / "backups"
+    UPLOAD_PATH = _BASE / "uploads" / "office"
+else:
+    DB_PATH = Path("/app/data/dashboard.db")
+    BACKUP_PATH = Path("/app/backups")
+    UPLOAD_PATH = Path("/app/uploads/office")
 NAS_PATH = Path("/mnt/nas")
 
 # Create directories
@@ -278,7 +302,7 @@ async def send_pushover(title: str, message: str, priority: int = 0):
                 "priority": priority
             })
         return True
-    except:
+    except Exception:
         return False
 
 # Models
@@ -317,7 +341,7 @@ def health():
     docker_ok = is_docker_available()
     return {
         "status": "ok", 
-        "timestamp": datetime.utcnow().isoformat() + "Z",
+        "timestamp": _utc_now_fmt(),
         "dockerAvailable": docker_ok
     }
 
@@ -429,14 +453,14 @@ def get_current_metrics(payload: dict = Depends(verify_token)):
         # Try Raspberry Pi thermal zone
         with open("/sys/class/thermal/thermal_zone0/temp", "r") as f:
             cpu_temp = int(f.read().strip()) / 1000
-    except:
+    except Exception:
         try:
             temps = psutil.sensors_temperatures()
             if temps.get('cpu_thermal'):
                 cpu_temp = temps['cpu_thermal'][0].current
             elif temps.get('coretemp'):
                 cpu_temp = temps['coretemp'][0].current
-        except:
+        except Exception:
             pass
     
     # Get network info
@@ -449,13 +473,13 @@ def get_current_metrics(payload: dict = Depends(verify_token)):
         s.connect(("8.8.8.8", 80))
         local_ip = s.getsockname()[0]
         s.close()
-    except:
+    except Exception:
         pass
     
     try:
         import urllib.request
         public_ip = urllib.request.urlopen('https://api.ipify.org', timeout=3).read().decode()
-    except:
+    except Exception:
         pass
     
     try:
@@ -465,7 +489,7 @@ def get_current_metrics(payload: dict = Depends(verify_token)):
                     if addr.family == socket.AF_INET and addr.address == local_ip:
                         iface = name
                         break
-    except:
+    except Exception:
         pass
     
     metrics = {
@@ -506,7 +530,7 @@ def get_metrics_history(hours: int = 24, payload: dict = Depends(verify_token)):
         "SELECT * FROM metrics WHERE timestamp >= datetime('now', ?) ORDER BY timestamp ASC",
         (f"-{hours} hours",)
     )
-    metrics = [dict(row) for row in cursor.fetchall()]
+    metrics = [_fix_dates(dict(row)) for row in cursor.fetchall()]
     conn.close()
     return {"metrics": metrics}
 
@@ -649,7 +673,7 @@ async def perform_backup(backup_id: str, container_id: str, backup_path: str, ba
             cursor = conn.cursor()
             cursor.execute(
                 "UPDATE docker_backups SET status = ?, size = ?, completed_at = ? WHERE id = ?",
-                ("completed", file_size, datetime.utcnow().isoformat(), backup_id)
+                ("completed", file_size, _utc_now_fmt(), backup_id)
             )
             conn.commit()
             conn.close()
@@ -664,7 +688,7 @@ async def perform_backup(backup_id: str, container_id: str, backup_path: str, ba
         cursor = conn.cursor()
         cursor.execute(
             "UPDATE docker_backups SET status = ?, error_message = ?, completed_at = ? WHERE id = ?",
-            ("failed", str(e), datetime.utcnow().isoformat(), backup_id)
+            ("failed", str(e), _utc_now_fmt(), backup_id)
         )
         conn.commit()
         conn.close()
@@ -683,7 +707,7 @@ def get_backups(payload: dict = Depends(verify_token)):
     # Format backups for frontend
     backups = []
     for row in rows:
-        backup = dict(row)
+        backup = _fix_dates(dict(row))
         # Map fields to frontend expected format
         backups.append({
             "id": backup.get("id"),
@@ -792,7 +816,7 @@ def get_schedules(payload: dict = Depends(verify_token)):
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM backup_schedules ORDER BY created_at DESC")
-    schedules = [dict(row) for row in cursor.fetchall()]
+    schedules = [_fix_dates(dict(row)) for row in cursor.fetchall()]
     conn.close()
     return {"schedules": schedules}
 
@@ -826,7 +850,7 @@ def get_files(payload: dict = Depends(verify_token)):
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM files ORDER BY created_at DESC")
-    files = [dict(row) for row in cursor.fetchall()]
+    files = [_fix_dates(dict(row)) for row in cursor.fetchall()]
     conn.close()
     return {"files": files}
 
@@ -904,7 +928,7 @@ def delete_file(file_id: str, payload: dict = Depends(verify_token)):
     # Delete physical file
     try:
         Path(file["storage_path"]).unlink(missing_ok=True)
-    except:
+    except Exception:
         pass
     
     cursor.execute("DELETE FROM files WHERE id = ?", (file_id,))
@@ -934,7 +958,7 @@ def update_setting(key: str, req: SettingRequest, payload: dict = Depends(verify
     if existing:
         cursor.execute(
             "UPDATE settings SET value = ?, updated_at = ? WHERE user_id = ? AND key = ?",
-            (req.value, datetime.utcnow().isoformat(), payload["userId"], key)
+            (req.value, _utc_now_fmt(), payload["userId"], key)
         )
     else:
         cursor.execute(
@@ -954,7 +978,7 @@ def get_logs(limit: int = 100, type: str = None, payload: dict = Depends(verify_
         cursor.execute("SELECT * FROM event_logs WHERE event_type = ? ORDER BY created_at DESC LIMIT ?", (type, limit))
     else:
         cursor.execute("SELECT * FROM event_logs ORDER BY created_at DESC LIMIT ?", (limit,))
-    logs = [dict(row) for row in cursor.fetchall()]
+    logs = [_fix_dates(dict(row)) for row in cursor.fetchall()]
     conn.close()
     return {"logs": logs}
 
@@ -1008,7 +1032,7 @@ def get_notifications(payload: dict = Depends(verify_token)):
         "SELECT * FROM event_logs WHERE user_id = ? OR user_id IS NULL ORDER BY created_at DESC LIMIT 50",
         (payload["userId"],)
     )
-    notifications = [dict(row) for row in cursor.fetchall()]
+    notifications = [_fix_dates(dict(row)) for row in cursor.fetchall()]
     conn.close()
     return {"notifications": notifications}
 
@@ -1201,7 +1225,7 @@ def check_updates(payload: dict = Depends(verify_token)):
         "packages_count": len(packages),
         "packages": packages,
         "kernel_update_available": kernel_update,
-        "checked_at": datetime.utcnow().isoformat() + "Z",
+        "checked_at": _utc_now_fmt(),
     }
 
 
@@ -1211,7 +1235,7 @@ def _record_update(update_type: str, status: str, packages_updated: int, log_out
     cursor = conn.cursor()
     cursor.execute(
         "INSERT INTO system_updates (id, update_type, status, packages_updated, log_output, error_message, completed_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
-        (record_id, update_type, status, packages_updated, log_output[-8000:] if log_output else "", error_message, datetime.utcnow().isoformat())
+        (record_id, update_type, status, packages_updated, log_output[-8000:] if log_output else "", error_message, _utc_now_fmt())
     )
     conn.commit()
     conn.close()
@@ -1302,7 +1326,7 @@ async def toggle_scheduler(payload: dict = Depends(verify_token)):
     cursor = conn.cursor()
     cursor.execute(
         "UPDATE update_scheduler SET enabled = ?, updated_at = ? WHERE id = ?",
-        (new_enabled, datetime.utcnow().isoformat(), sched["id"])
+        (new_enabled, _utc_now_fmt(), sched["id"])
     )
     conn.commit()
     conn.close()
@@ -1351,7 +1375,7 @@ async def _scheduler_loop():
             cursor = conn.cursor()
             cursor.execute(
                 "UPDATE update_scheduler SET last_run = ? WHERE id = ?",
-                (datetime.utcnow().isoformat(), sched["id"])
+                (_utc_now_fmt(), sched["id"])
             )
             conn.commit()
             conn.close()
@@ -1367,7 +1391,7 @@ def get_update_history(payload: dict = Depends(verify_token)):
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM system_updates ORDER BY created_at DESC LIMIT 50")
-    updates = [dict(row) for row in cursor.fetchall()]
+    updates = [_fix_dates(dict(row)) for row in cursor.fetchall()]
     conn.close()
     return {"updates": updates}
 

@@ -69,7 +69,7 @@ Il file `.env` viene configurato automaticamente. Configurazione predefinita:
 ```env
 DUCKDB_PATH=./data/dashboard.db
 JWT_SECRET=generated_automatically
-VITE_API_URL=http://localhost:3050/api
+VITE_API_URL=http://localhost:3061/api
 BACKEND_PORT=3050
 ```
 
@@ -78,7 +78,7 @@ Tutto funziona out-of-the-box, nessuna configurazione esterna richiesta!
 ## Accesso
 
 Apri il browser:
-- Locale: `http://localhost:3050`
+- Locale: `http://localhost:3061`
 - Rete: `http://<raspberry-pi-ip>:3050`
 
 ## Comandi Docker
