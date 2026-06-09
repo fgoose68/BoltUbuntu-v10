@@ -39,7 +39,7 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-const PORT = process.env.BACKEND_PORT || 3050;
+const PORT = process.env.BACKEND_PORT || 8001;
 
 const startServer = async () => {
   try {

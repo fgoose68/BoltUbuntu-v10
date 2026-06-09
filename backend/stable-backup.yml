@@ -1,0 +1,87 @@
+name: boltubuntubozzalavoro
+services:
+  backend:
+    build:
+      context: /home/microsaas/BoltUbuntu bozza lavoro/backend
+      dockerfile: Dockerfile
+    container_name: BoltUbuntu-backend
+    environment:
+      DOCKER_GID: "995"
+      DOCKER_HOST: unix:///var/run/docker.sock
+      JWT_SECRET: raspberry_dashboard_secret_key_2024
+      TZ: Europe/Rome
+    group_add:
+      - "995"
+    networks:
+      default: null
+    ports:
+      - mode: ingress
+        target: 8001
+        published: "8001"
+        protocol: tcp
+    restart: unless-stopped
+    volumes:
+      - type: bind
+        source: /home/microsaas/BoltUbuntu bozza lavoro/data
+        target: /app/data
+        bind: {}
+      - type: bind
+        source: /home/microsaas/BoltUbuntu bozza lavoro/backups
+        target: /app/backups
+        bind: {}
+      - type: bind
+        source: /home/microsaas/BoltUbuntu bozza lavoro/uploads
+        target: /app/uploads
+        bind: {}
+      - type: bind
+        source: /var/run/docker.sock
+        target: /var/run/docker.sock
+        bind: {}
+  frontend:
+    build:
+      context: /home/microsaas/BoltUbuntu bozza lavoro/frontend
+      dockerfile: Dockerfile
+    container_name: BoltUbuntu-frontend
+    depends_on:
+      backend:
+        condition: service_started
+        required: true
+    environment:
+      DOCKER_GID: "995"
+      TZ: Europe/Rome
+      VITE_PORT: "3050"
+      VITE_PROXY_TARGET: http://backend:8001
+    networks:
+      default: null
+    ports:
+      - mode: ingress
+        target: 3050
+        published: "3061"
+        protocol: tcp
+    restart: unless-stopped
+  manutenzione:
+    build:
+      context: /home/microsaas/BoltUbuntu bozza lavoro/manutenzione
+      dockerfile: Dockerfile
+    container_name: BoltUbuntu-manutenzione
+    environment:
+      TZ: Europe/Rome
+    networks:
+      default: null
+    pid: host
+    ports:
+      - mode: ingress
+        target: 3055
+        published: "3055"
+        protocol: tcp
+    privileged: true
+    restart: unless-stopped
+    volumes:
+      - type: bind
+        source: /var/run/docker.sock
+        target: /var/run/docker.sock
+        read_only: true
+        bind: {}
+networks:
+  default:
+    name: boltubuntubozzalavoro_default

@@ -1,0 +1,61 @@
+[
+    {
+        "id": "btn-webapp1",
+        "action": "update_webapp1",
+        "label": "Aggiorna WebApp 1",
+        "icon": "refresh",
+        "enabled": true,
+        "category": "webapp"
+    },
+    {
+        "id": "btn-webapp2",
+        "action": "custom_btn-webapp2",
+        "label": "Aggiorna WebApp 2",
+        "icon": "custom",
+        "enabled": true,
+        "category": "custom",
+        "command": "docker ps"
+    },
+    {
+        "id": "btn-webapp3",
+        "action": "update_webapp3",
+        "label": "Aggiorna WebApp 3",
+        "icon": "refresh",
+        "enabled": true,
+        "category": "webapp"
+    },
+    {
+        "id": "btn-services",
+        "action": "check_services",
+        "label": "Stato Servizi SaaS",
+        "icon": "server",
+        "enabled": true,
+        "category": "utility",
+        "command": null
+    },
+    {
+        "id": "btn-ports",
+        "action": "check_ports",
+        "label": "Verifica Porte",
+        "icon": "network",
+        "enabled": true,
+        "category": "utility"
+    },
+    {
+        "id": "btn-cleanup",
+        "action": "cleanup",
+        "label": "Pulizia Spazio e Log",
+        "icon": "trash",
+        "enabled": true,
+        "category": "utility"
+    },
+    {
+        "id": "btn-1780830987584",
+        "action": "custom_btn-1780830987584",
+        "command": "print \"hello ciccio\"",
+        "label": "Prova testo",
+        "icon": "custom",
+        "category": "custom",
+        "enabled": true
+    }
+]

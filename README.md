@@ -1,6 +1,8 @@
-# Raspberry Pi Dashboard
+# BoltUbuntu Dashboard
 
-Una Dashboard Web moderna e completa per gestire backup Docker, file Office e monitoraggio hardware del tuo Raspberry Pi.
+**Versione:** Ver.6.2Giu2026
+
+Una Dashboard Web moderna e completa per gestire backup Docker, file Office e monitoraggio hardware del tuo Raspberry Pi 5.
 
 ![Dashboard Preview](https://via.placeholder.com/800x400?text=Raspberry+Pi+Dashboard)
 
@@ -75,11 +77,20 @@ BACKEND_PORT=3050
 
 Tutto funziona out-of-the-box, nessuna configurazione esterna richiesta!
 
+## Avvio Rapido
+
+```bash
+cd ~/BoltUbuntu
+./start.sh
+```
+
+Lo script `start.sh` pulisce automaticamente le porte (8001, 3050, 3061) da eventuali processi zombie e avvia backend e frontend.
+
 ## Accesso
 
 Apri il browser:
 - Locale: `http://localhost:3061`
-- Rete: `http://<raspberry-pi-ip>:3050`
+- Rete: `http://<raspberry-pi-ip>:3061`
 
 ## Comandi Docker
 
@@ -144,6 +155,14 @@ Utilizza espressioni cron standard:
 ```
 
 ## Risoluzione Problemi
+
+### Processi Zombie (porte occupate)
+Se l'avvio fallisce, potrebbero esserci vecchi processi sulle porte:
+
+```bash
+cd ~/BoltUbuntu
+./start.sh   # Pulisce automaticamente le porte e riavvia
+```
 
 ### Docker permission denied
 ```bash

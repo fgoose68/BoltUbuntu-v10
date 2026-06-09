@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { SystemMetrics } from '../components/SystemMetrics';
 import { DockerBackups } from '../components/DockerBackups';
 import { DockerContainers } from '../components/DockerContainers';
-import { FileManager } from '../components/FileManager';
+import { Manutenzione } from '../components/Manutenzione';
 import { Settings } from '../components/Settings';
 import { SystemUpdates } from '../components/SystemUpdates';
 import { useAuth } from '../contexts/AuthContext';
@@ -17,7 +17,7 @@ export function Dashboard() {
     { id: 'metrics', label: 'System Monitor', icon: '📊' },
     { id: 'docker', label: 'Docker Backups', icon: '🐳' },
     { id: 'containers', label: 'Containers Status', icon: '📦' },
-    { id: 'files', label: 'File Manager', icon: '📁' },
+    { id: 'files', label: 'Manutenzione', icon: '🔧' },
     { id: 'updates', label: 'System Updates', icon: '🔄' },
     { id: 'settings', label: 'Settings', icon: '⚙️' },
   ];
@@ -106,13 +106,13 @@ export function Dashboard() {
           {activeTab === 'metrics' && <SystemMetrics />}
           {activeTab === 'docker' && <DockerBackups />}
           {activeTab === 'containers' && <DockerContainers />}
-          {activeTab === 'files' && <FileManager />}
+          {activeTab === 'files' && <Manutenzione />}
           {activeTab === 'updates' && <SystemUpdates />}
           {activeTab === 'settings' && <Settings />}
         </div>
 
         <div className={`mt-8 text-center text-xs font-medium ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>
-          Ver.6.1Giu2026
+          Ver.6.2Giu2026
         </div>
       </div>
     </div>

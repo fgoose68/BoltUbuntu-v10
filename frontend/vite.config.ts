@@ -1,18 +1,17 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
-const port = parseInt(process.env.VITE_PORT || '3000', 10)
-const proxyTarget = process.env.VITE_PROXY_TARGET || 'http://localhost:8001'
-
 export default defineConfig({
   plugins: [react()],
   server: {
     host: '0.0.0.0',
-    port,
+    port: 3050,
     allowedHosts: true,
     proxy: {
       '/api': {
-        target: proxyTarget,
+        // Inside Docker: use 'backend' (container name)
+        // Outside Docker (local dev): use 'localhost:8001'
+        target: process.env.VITE_PROXY_TARGET || 'http://backend:8001',
         changeOrigin: true,
       }
     }

@@ -2,7 +2,7 @@
 ## BoltUbuntu Dashboard
 > 🌍 **Località**: Roma, Italia — **Fuso orario**: Europe/Rome (CEST UTC+2) — Ora: 17:47.
 
-### Versione 6.1Giu2026
+### Versione 6.2Giu2026
 
 ---
 
@@ -218,7 +218,7 @@ Configurazione dell'applicazione.
 - Filtra per tipo di evento
 - Monitora backup, upload, login, errori
 
-### 4.6 System Updates (Ver.6.1Giu2026)
+### 4.6 System Updates (Ver.6.2Giu2026)
 
 Tab dedicata alla gestione aggiornamenti OS/Kernel del Raspberry Pi.
 
@@ -322,7 +322,7 @@ cat > ~/BoltUbuntu/update.sh << 'EOF'
 
 echo "=========================================="
 echo "  BoltUbuntu - Script di Aggiornamento"
-echo "  Ver.6.1Giu2026"
+echo "  Ver.6.2Giu2026"
 echo "=========================================="
 echo ""
 
@@ -635,7 +635,7 @@ sed -i 's/old-name/new-name/g' docker-compose.yml
 
 ## 8. Configurazione Sudoers per System Updates
 
-> ℹ️ **AGGIORNAMENTO Ver.6.1Giu2026 (post-deploy)**: la configurazione sudoers descritta sotto **NON è più necessaria** se il `docker-compose.yml` include `privileged: true` per il backend (default a partire da Ver.6.1Giu2026). Il container gira come root e accede direttamente ai binari `apt-get` e `reboot` montati dall'host. Questa sezione è mantenuta solo come riferimento storico o per chi preferisce eseguire il backend senza `privileged: true` (richiede modifiche al codice).
+> ℹ️ **AGGIORNAMENTO Ver.6.2Giu2026 (post-deploy)**: la configurazione sudoers descritta sotto **NON è più necessaria** se il `docker-compose.yml` include `privileged: true` per il backend (default a partire da Ver.6.2Giu2026). Il container gira come root e accede direttamente ai binari `apt-get` e `reboot` montati dall'host. Questa sezione è mantenuta solo come riferimento storico o per chi preferisce eseguire il backend senza `privileged: true` (richiede modifiche al codice).
 
 ### 8.1 Perché serve (solo modalità non-privileged)
 Il tab System Updates esegue comandi privilegiati (`apt-get upgrade`, `reboot`) dal container backend. Affinché possa farlo senza richiedere password ogni volta, il sistema operativo del Raspberry Pi deve autorizzarli tramite `sudoers`.
@@ -668,7 +668,7 @@ Output atteso:
 Se vedi errori, **NON riavviare nulla** e correggi prima la sintassi (un errore in sudoers può bloccare tutto sudo!).
 
 ### 8.5 Step 4 — Riavvia i container per applicare il nuovo `docker-compose.yml`
-Il file `docker-compose.yml` è già stato aggiornato (Ver.6.1Giu2026) con `privileged: true` e i mount necessari per `apt`. Quindi:
+Il file `docker-compose.yml` è già stato aggiornato (Ver.6.2Giu2026) con `privileged: true` e i mount necessari per `apt`. Quindi:
 
 ```bash
 cd ~/BoltUbuntu
@@ -710,7 +710,7 @@ sudo rm /etc/sudoers.d/boltdash-updates
 
 **Causa:** gli script `npm` nel `frontend/package.json` forzano la porta tramite argomenti CLI (`--port 3000`), che hanno **priorità** sul `vite.config.ts`. Risultato: Vite parte sulla porta 3000 dentro al container, ma Docker espone la 3050 → il frontend non è raggiungibile.
 
-**Soluzione (già applicata in Ver.6.1Giu2026):**
+**Soluzione (già applicata in Ver.6.2Giu2026):**
 Negli script di `frontend/package.json` rimuovere completamente i flag CLI di porta/host, così Vite legge la configurazione ufficiale da `vite.config.ts`:
 
 ```json
@@ -823,7 +823,7 @@ sleep 25
 docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
 ```
 
-Output atteso (Ver.6.1Giu2026+):
+Output atteso (Ver.6.2Giu2026+):
 ```
 NAMES                          STATUS              PORTS
 BoltUbuntu-backend      Up X seconds        0.0.0.0:8001->8001/tcp
@@ -868,7 +868,94 @@ docker ps --format "table {{.Names}}\t{{.Status}}"
 
 > 💡 I **volumi** (`./data`, `./backups`, `./uploads`) sono mappati a directory locali, quindi i dati persistono anche quando ricrei i container. Nessuna perdita di dati.
 
-### 9.9 Comando one-liner per aggiornamento completo
+### 9.10 Processi Zombie e Conflitti di Porte
+
+Se l'avvio del progetto fallisce o la pagina non si carica, potrebbero esserci **processi zombie** (vecchie istanze di Vite o Python) che occupano le porte necessarie.
+
+**Sintomi:**
+- Timeout o "Connessione rifiutata" sul browser
+- Messaggio "Port already in use" nei log
+- Backend o frontend non rispondono
+
+**Soluzione automatica (consigliata):**
+
+Usa lo script `start.sh` che pulisce automaticamente le porte prima di avviare:
+
+```bash
+cd ~/BoltUbuntu
+./start.sh
+```
+
+Lo script:
+1. Identifica e ferma tutti i processi sulle porte 8001, 3050, 3061
+2. Verifica che le porte siano libere
+3. Avvia backend e frontend in background
+4. Attende che i servizi siano pronti
+
+**Soluzione manuale:**
+
+```bash
+# Trova i processi sulle porte problematiche
+lsof -nP -i :8001
+lsof -nP -i :3061
+
+# Ferma i processi (sostituisci PID con il numero trovato)
+kill -9 PID
+
+# Oppure uccidi tutti i processi node/vite/python correlati
+pkill -f "uvicorn"
+pkill -f "vite"
+```
+
+**Prevenzione:**
+
+Non chiudere mai i terminali mentre i servizi sono in esecuzione. Usa sempre:
+- `Ctrl+C` per fermare gracemente
+- O `nohup` / background per avvii persistenti
+
+---
+
+### 9.12 Modulo Manutenzione (Porta 3055)
+
+Il modulo Manutenzione è un servizio separato che gira sulla porta **3055** e viene avviato automaticamente da Docker Compose. È integrato direttamente nella Dashboard React (no iframe).
+
+**Funzionalità:**
+- Aggiornamento WebApp 1/2/3 (git fetch + reset + dipendenze + systemctl restart)
+- Verifica Porte Occupate (`ss -tulnp`)
+- Stato Servizi SaaS (nginx, docker, postgresql, mysql)
+- Pulizia Spazio e Log (apt-get clean, logrotate, find)
+
+**Configurazione Docker:**
+
+Il container `BoltUbuntu-manutenzione` viene avviato con `privileged: true` quindi ha accesso root diretto - **nessuna password richiesta** per i comandi di sistema.
+
+```yaml
+manutenzione:
+  build: ./manutenzione
+  container_name: BoltUbuntu-manutenzione
+  privileged: true
+  pid: host
+  ports:
+    - "3055:3055"
+```
+
+**Nota**: I 6 pulsanti della scheda Manutenzione non richiedono password quando il container è eseguito con `privileged: true`.
+
+**Avvio standalone (senza Docker):**
+
+```bash
+cd ~/BoltUbuntu/manutenzione
+pip3 install -r requirements.txt
+python3 app.py
+```
+
+**URL modulo:**
+- Standalone: `http://localhost:3055`
+- Integrato nella Dashboard: tab "Manutenzione" su porta 3061
+
+---
+
+### 9.13 Comando one-liner per aggiornamento completo
 
 Copia-incolla unico per: salvare DB, pull, rebuild, rimozione container vecchi:
 
@@ -912,4 +999,4 @@ services:
 
 
 
-*Documento generato per BoltUbuntu Ver.6.1Giu2026*
+*Documento generato per BoltUbuntu Ver.6.2Giu2026*

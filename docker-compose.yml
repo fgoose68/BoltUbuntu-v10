@@ -26,6 +26,26 @@ services:
       - "${DOCKER_GID:-999}"
     restart: unless-stopped
 
+  manutenzione:
+    build: ./manutenzione
+    container_name: BoltUbuntu-manutenzione
+    privileged: true
+    pid: host
+    ports:
+      - "3055:3055"
+    volumes:
+      - ./manutenzione/buttons_config.json:/app/buttons_config.json
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /usr/bin/systemctl:/usr/bin/systemctl
+      - /usr/sbin/ss:/usr/sbin/ss
+      - /usr/bin/apt-get:/usr/bin/apt-get
+      - /usr/bin/find:/usr/bin/find
+      - /usr/bin/logrotate:/usr/bin/logrotate
+      - /etc/sudoers.d:/etc/sudoers.d
+    environment:
+      - TZ=Europe/Rome
+    restart: unless-stopped
+
   frontend:
     build: ./frontend
     container_name: BoltUbuntu-frontend

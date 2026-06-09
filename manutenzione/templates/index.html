@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="it" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BoltUbuntu - Manutenzione</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Socket.IO Client -->
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+
+    <!-- Tailwind Dark Mode Config -->
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        terminal: {
+                            bg: '#0a0a0a',
+                            text: '#22c55e',
+                            dim: '#16a34a'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Stile Terminale */
+        .terminal-screen {
+            background: linear-gradient(180deg, #0a0a0a 0%, #111111 100%);
+            font-family: 'Courier New', Courier, monospace;
+            box-shadow: inset 0 0 50px rgba(34, 197, 94, 0.1);
+        }
+
+        .terminal-text {
+            color: #22c55e;
+            text-shadow: 0 0 10px rgba(34, 197, 94, 0.5);
+        }
+
+        .terminal-error {
+            color: #ef4444;
+            text-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
+        }
+
+        /* Effetto lampeggio per pulsante attivo */
+        @keyframes pulse-glow {
+            0%, 100% {
+                box-shadow: 0 0 5px #f97316, 0 0 10px #f97316, 0 0 15px #f97316;
+                border-color: #fb923c;
+            }
+            50% {
+                box-shadow: 0 0 20px #f97316, 0 0 30px #f97316, 0 0 40px #f97316;
+                border-color: #fbbf24;
+            }
+        }
+
+        .btn-active {
+            animation: pulse-glow 1s ease-in-out infinite;
+            background: linear-gradient(135deg, #f97316 0%, #ea580c 100%) !important;
+            transform: scale(0.98);
+        }
+
+        /* Transizione smooth per i pulsanti */
+        .action-btn {
+            transition: all 0.2s ease-in-out;
+        }
+
+        .action-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        /* Scrollbar per terminale */
+        .terminal-output::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .terminal-output::-webkit-scrollbar-track {
+            background: #1a1a1a;
+        }
+
+        .terminal-output::-webkit-scrollbar-thumb {
+            background: #22c55e;
+            border-radius: 4px;
+        }
+
+        /* Linea comando nel terminale */
+        .cmd-line::before {
+            content: '$ ';
+            color: #22c55e;
+        }
+
+        /* Header stylle */
+        .header-gradient {
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+        }
+
+        /* Modal animation */
+        .modal-overlay {
+            transition: opacity 0.2s ease-in-out;
+        }
+        .modal-content {
+            transition: transform 0.2s ease-in-out, opacity 0.2s ease-in-out;
+        }
+        .modal-hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .modal-hidden .modal-content {
+            transform: scale(0.95);
+            opacity: 0;
+        }
+
+        /* Drag and drop */
+        .dragging {
+            opacity: 0.5;
+        }
+        .drag-over {
+            border: 2px dashed #22c55e;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-900 text-gray-100 min-h-screen">
+
+    <!-- Header -->
+    <header class="header-gradient border-b border-gray-700 px-6 py-4">
+        <div class="max-w-6xl mx-auto flex items-center justify-between">
+            <div>
+                <h1 class="text-2xl font-bold text-white">BoltUbuntu <span class="text-gray-400">Manutenzione</span></h1>
+                <p class="text-sm text-gray-400">Ver.6.2Giu2026 - Sistema di gestione e manutenzione SaaS</p>
+            </div>
+            <div class="flex items-center gap-4">
+                <span id="connection-status" class="flex items-center gap-2 text-sm">
+                    <span id="status-dot" class="w-3 h-3 rounded-full bg-red-500"></span>
+                    <span id="status-text">Disconnesso</span>
+                </span>
+                <button onclick="toggleEditor()" 
+                        class="text-sm bg-gray-700 hover:bg-gray-600 px-3 py-1.5 rounded border border-gray-600 flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    </svg>
+                    Gestisci Pulsanti
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-6xl mx-auto p-6">
+
+        <!-- Pulsanti di Controllo (dinamici) -->
+        <section id="buttons-container" class="mb-6">
+            <h2 class="text-lg font-semibold text-gray-300 mb-4">Pannello di Controllo</h2>
+            <div id="buttons-grid" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <!-- I pulsanti vengono generati dinamicamente -->
+            </div>
+        </section>
+
+        <!-- Terminale Output -->
+        <section>
+            <div class="flex items-center justify-between mb-2">
+                <h2 class="text-lg font-semibold text-gray-300">Output Terminale</h2>
+                <button onclick="clearTerminal()"
+                        class="text-sm text-gray-400 hover:text-white px-3 py-1 rounded bg-gray-800 border border-gray-600">
+                    Pulisci
+                </button>
+            </div>
+
+            <div id="terminal"
+                 class="terminal-screen terminal-output rounded-lg border border-gray-700 p-4 h-80 overflow-y-auto">
+                <div id="terminal-content" class="space-y-1">
+                    <div class="terminal-text text-sm">
+                        <span class="text-gray-500">// BoltUbuntu Manutenzione - Output in tempo reale</span>
+                    </div>
+                    <div class="terminal-text text-sm">
+                        <span class="text-gray-500">// Premi un pulsante per iniziare...</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Indicatore stato esecuzione -->
+            <div id="execution-indicator" class="mt-3 flex items-center gap-2 hidden">
+                <div class="animate-spin w-4 h-4 border-2 border-orange-500 border-t-transparent rounded-full"></div>
+                <span class="text-orange-400 text-sm">Esecuzione in corso...</span>
+            </div>
+        </section>
+
+        <!-- Info Box -->
+        <section class="mt-6 bg-gray-800 rounded-lg p-4 border border-gray-700">
+            <h3 class="text-white font-medium mb-2">Note di utilizzo</h3>
+            <ul class="text-sm text-gray-400 space-y-1">
+                <li>• Gli aggiornamenti WebApp eseguono <code class="bg-gray-900 px-1 rounded">git reset --hard</code> nella cartella configurata</li>
+                <li>• I servizi vengono riavviati tramite <code class="bg-gray-900 px-1 rounded">systemctl</code></li>
+                <li>• Durante l'esecuzione di un'operazione, tutti i pulsanti sono disabilitati</li>
+                <li>• Clicca "Gestisci Pulsanti" per modificare, aggiungere o eliminare pulsanti</li>
+            </ul>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="mt-8 py-4 text-center text-gray-500 text-sm border-t border-gray-800">
+        BoltUbuntu Manutenzione Module &bull; Ver.6.2Giu2026 &bull; Powered by Flask-SocketIO
+    </footer>
+
+    <!-- Modal Gestione Pulsanti -->
+    <div id="editor-modal" class="fixed inset-0 z-50 modal-hidden modal-overlay">
+        <div class="modal-content absolute inset-4 md:inset-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-full md:max-w-2xl bg-gray-800 rounded-xl border border-gray-700 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <!-- Header Modal -->
+            <div class="flex items-center justify-between px-6 py-4 border-b border-gray-700 bg-gray-800">
+                <h3 class="text-lg font-semibold text-white">Gestione Pulsanti</h3>
+                <button onclick="toggleEditor()" class="text-gray-400 hover:text-white">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+            
+            <!-- Content Modal -->
+            <div class="flex-1 overflow-y-auto p-6">
+                <!-- Lista Pulsanti -->
+                <div id="buttons-editor-list" class="space-y-3 mb-6">
+                    <!-- Pulsanti caricati dinamicamente -->
+                </div>
+                
+                <!-- Form aggiunta/modifica -->
+                <div class="bg-gray-900 rounded-lg p-4 border border-gray-700">
+                    <h4 id="form-title" class="text-white font-medium mb-4">Aggiungi Nuovo Pulsante</h4>
+                    <input type="hidden" id="edit-button-id" value="">
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="block text-gray-400 text-sm mb-1">Etichetta</label>
+                            <input type="text" id="btn-label" placeholder="Es: Riavvia Database"
+                                   class="w-full bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:border-blue-500 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-gray-400 text-sm mb-1">Azione</label>
+                            <select id="btn-action-type" onchange="toggleCommandField()"
+                                    class="w-full bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:border-blue-500 focus:outline-none">
+                                <option value="preset">Azione Predefinita</option>
+                                <option value="custom">Comando Personalizzato</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div id="preset-action-field" class="mb-4">
+                        <label class="block text-gray-400 text-sm mb-1">Seleziona Azione</label>
+                        <select id="btn-action-preset"
+                                class="w-full bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:border-blue-500 focus:outline-none">
+                            <option value="update_webapp1">Aggiorna WebApp 1</option>
+                            <option value="update_webapp2">Aggiorna WebApp 2</option>
+                            <option value="update_webapp3">Aggiorna WebApp 3</option>
+                            <option value="check_ports">Verifica Porte</option>
+                            <option value="check_services">Stato Servizi SaaS</option>
+                            <option value="cleanup">Pulizia Spazio e Log</option>
+                        </select>
+                    </div>
+                    
+                    <div id="custom-command-field" class="mb-4 hidden">
+                        <label class="block text-gray-400 text-sm mb-1">Comando Shell</label>
+                        <input type="text" id="btn-command" placeholder="Es: docker restart mycontainer"
+                               class="w-full bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:border-blue-500 focus:outline-none">
+                    </div>
+                    
+                    <div class="flex gap-3">
+                        <button onclick="saveButton()"
+                                class="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-medium py-2 px-4 rounded transition-colors">
+                            Salva Pulsante
+                        </button>
+                        <button onclick="resetForm()"
+                                class="bg-gray-700 hover:bg-gray-600 text-white font-medium py-2 px-4 rounded transition-colors">
+                            Annulla
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // =================================================================
+        // CONFIGURAZIONE - Connessione al backend Manutenzione (porta 3055)
+        // =================================================================
+        const SOCKET_URL = 'http://localhost:3055';
+        // =================================================================
+
+        let socket = null;
+        let isExecuting = false;
+        let buttonsConfig = [];
+        let buttonMap = {};
+
+        // Elementi DOM
+        const terminalContent = document.getElementById('terminal-content');
+        const terminal = document.getElementById('terminal');
+        const statusDot = document.getElementById('status-dot');
+        const statusText = document.getElementById('status-text');
+        const executionIndicator = document.getElementById('execution-indicator');
+        const buttonsGrid = document.getElementById('buttons-grid');
+        const buttonsEditorList = document.getElementById('buttons-editor-list');
+        const editorModal = document.getElementById('editor-modal');
+
+        // Icone SVG
+        const icons = {
+            refresh: '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>',
+            network: '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"/></svg>',
+            server: '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"/></svg>',
+            trash: '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>',
+            custom: '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>',
+            edit: '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>',
+            delete: '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>',
+            up: '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg>',
+            down: '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>'
+        };
+
+        // Inizializzazione connessione Socket.IO
+        function initSocket() {
+            socket = io(SOCKET_URL + '/maintenance', {
+                transports: ['websocket', 'polling'],
+                reconnection: true,
+                reconnectionAttempts: 5,
+                reconnectionDelay: 1000
+            });
+
+            socket.on('connect', () => {
+                updateStatus(true);
+                enableAllButtons();
+            });
+
+            socket.on('disconnect', () => {
+                updateStatus(false);
+            });
+
+            socket.on('output', (data) => {
+                addLine(data.line, data.is_error);
+            });
+
+            socket.on('status', (data) => {
+                addLine(`[INFO] ${data.message}`, false);
+            });
+
+            socket.on('error', (data) => {
+                addLine(`[ERRORE] ${data.message}`, true);
+            });
+
+            socket.on('execution_started', (data) => {
+                setExecuting(data.action, true);
+            });
+
+            socket.on('execution_completed', (data) => {
+                setExecuting(data.action, false);
+                addLine('');
+                addLine('=== OPERAZIONE COMPLETATA ===', false);
+                addLine('');
+            });
+
+            socket.on('buttons_config', (data) => {
+                buttonsConfig = data.buttons;
+                renderButtons();
+                // Defer enable per dare tempo ai nuovi elementi di essere aggiunti al DOM
+                setTimeout(() => enableAllButtons(), 50);
+                renderEditorList();
+            });
+        }
+
+        // Aggiorna indicatore connessione
+        function updateStatus(connected) {
+            if (connected) {
+                statusDot.className = 'w-3 h-3 rounded-full bg-green-500';
+                statusText.textContent = 'Connesso';
+            } else {
+                statusDot.className = 'w-3 h-3 rounded-full bg-red-500';
+                statusText.textContent = 'Disconnesso';
+            }
+        }
+
+        // Renderizza i pulsanti nella griglia principale
+        function renderButtons() {
+            buttonMap = {};
+            buttonsGrid.innerHTML = '';
+            
+            // Raggruppa per categoria
+            const webappBtns = buttonsConfig.filter(b => b.category === 'webapp');
+            const utilityBtns = buttonsConfig.filter(b => b.category === 'utility');
+            const customBtns = buttonsConfig.filter(b => b.category === 'custom');
+            
+            const allBtns = [...webappBtns, ...utilityBtns, ...customBtns];
+            
+            allBtns.forEach((btn, index) => {
+                const buttonId = btn.id;
+                const action = btn.action || `custom_${buttonId}`;
+                buttonMap[action] = buttonId;
+                
+                const button = document.createElement('button');
+                button.id = buttonId;
+                button.className = 'action-btn bg-gray-800 hover:bg-gray-700 text-white font-medium py-4 px-6 rounded-lg border border-gray-600 flex items-center justify-center gap-3';
+                button.onclick = () => executeAction(action);
+                
+                const icon = icons[btn.icon] || icons.custom;
+                button.innerHTML = `${icon}<span>${btn.label}</span>`;
+                
+                // Calcola la riga (3 colonne)
+                const col = index % 3;
+                const row = Math.floor(index / 3);
+                
+                buttonsGrid.appendChild(button);
+            });
+            
+            // Abilita subito i pulsanti dopo averli creati
+            enableAllButtons();
+        }
+
+        // Renderizza la lista nel editor
+        function renderEditorList() {
+            buttonsEditorList.innerHTML = '';
+            
+            buttonsConfig.forEach((btn, index) => {
+                const item = document.createElement('div');
+                item.className = 'flex items-center gap-3 bg-gray-800 rounded-lg p-3 border border-gray-700';
+                item.draggable = true;
+                item.dataset.id = btn.id;
+                
+                // Icona
+                const icon = icons[btn.icon] || icons.custom;
+                
+                // Categoria badge
+                const categoryBadge = {
+                    'webapp': '<span class="text-xs bg-purple-900 text-purple-300 px-2 py-0.5 rounded">WebApp</span>',
+                    'utility': '<span class="text-xs bg-green-900 text-green-300 px-2 py-0.5 rounded">Utility</span>',
+                    'custom': '<span class="text-xs bg-blue-900 text-blue-300 px-2 py-0.5 rounded">Custom</span>'
+                }[btn.category] || '';
+                
+                item.innerHTML = `
+                    <div class="cursor-move text-gray-500 hover:text-gray-300">${icons.up}${icons.down}</div>
+                    <div class="flex-1">
+                        <div class="flex items-center gap-2">
+                            <span class="text-white">${btn.label}</span>
+                            ${categoryBadge}
+                        </div>
+                        <div class="text-xs text-gray-500">${btn.action || btn.command || 'N/A'}</div>
+                    </div>
+                    <button onclick="editButton('${btn.id}')" class="text-blue-400 hover:text-blue-300 p-1" title="Modifica">
+                        ${icons.edit}
+                    </button>
+                    <button onclick="deleteButton('${btn.id}')" class="text-red-400 hover:text-red-300 p-1" title="Elimina">
+                        ${icons.delete}
+                    </button>
+                `;
+                
+                // Drag and drop events
+                item.addEventListener('dragstart', handleDragStart);
+                item.addEventListener('dragover', handleDragOver);
+                item.addEventListener('drop', handleDrop);
+                item.addEventListener('dragend', handleDragEnd);
+                
+                buttonsEditorList.appendChild(item);
+            });
+        }
+
+        // Drag and drop handlers
+        let draggedItem = null;
+
+        function handleDragStart(e) {
+            draggedItem = this;
+            this.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            this.classList.add('drag-over');
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            this.classList.remove('drag-over');
+            
+            if (draggedItem !== this) {
+                // Riordina
+                const items = Array.from(buttonsEditorList.children);
+                const fromIndex = items.indexOf(draggedItem);
+                const toIndex = items.indexOf(this);
+                
+                // Aggiorna configurazione
+                const [moved] = buttonsConfig.splice(fromIndex, 1);
+                buttonsConfig.splice(toIndex, 0, moved);
+                
+                // Salva e rirenderizza
+                saveButtonsConfig();
+                renderButtons();
+                renderEditorList();
+            }
+        }
+
+        function handleDragEnd() {
+            this.classList.remove('dragging');
+            document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+        }
+
+        // Toggle modal editor
+        function toggleEditor() {
+            editorModal.classList.toggle('modal-hidden');
+            if (!editorModal.classList.contains('modal-hidden')) {
+                renderEditorList();
+            }
+        }
+
+        // Toggle command field based on action type
+        function toggleCommandField() {
+            const actionType = document.getElementById('btn-action-type').value;
+            const presetField = document.getElementById('preset-action-field');
+            const customField = document.getElementById('custom-command-field');
+            
+            if (actionType === 'preset') {
+                presetField.classList.remove('hidden');
+                customField.classList.add('hidden');
+            } else {
+                presetField.classList.add('hidden');
+                customField.classList.remove('hidden');
+            }
+        }
+
+        // Edit button
+        function editButton(id) {
+            const btn = buttonsConfig.find(b => b.id === id);
+            if (!btn) return;
+            
+            document.getElementById('form-title').textContent = 'Modifica Pulsante';
+            document.getElementById('edit-button-id').value = id;
+            document.getElementById('btn-label').value = btn.label;
+            
+            if (btn.command) {
+                document.getElementById('btn-action-type').value = 'custom';
+                toggleCommandField();
+                document.getElementById('btn-command').value = btn.command;
+            } else {
+                document.getElementById('btn-action-type').value = 'preset';
+                toggleCommandField();
+                document.getElementById('btn-action-preset').value = btn.action;
+            }
+        }
+
+        // Delete button
+        function deleteButton(id) {
+            if (!confirm('Eliminare questo pulsante?')) return;
+            
+            buttonsConfig = buttonsConfig.filter(b => b.id !== id);
+            saveButtonsConfig();
+            renderButtons();
+            renderEditorList();
+        }
+
+        // Save button (add or update)
+        function saveButton() {
+            const editId = document.getElementById('edit-button-id').value;
+            const label = document.getElementById('btn-label').value.trim();
+            
+            if (!label) {
+                alert('Inserisci un\'etichetta');
+                return;
+            }
+            
+            const actionType = document.getElementById('btn-action-type').value;
+            let action, command, icon, category;
+            
+            if (actionType === 'preset') {
+                action = document.getElementById('btn-action-preset').value;
+                command = null;
+                icon = getIconForAction(action);
+                category = action.startsWith('update_webapp') ? 'webapp' : 'utility';
+            } else {
+                command = document.getElementById('btn-command').value.trim();
+                if (!command) {
+                    alert('Inserisci un comando');
+                    return;
+                }
+                action = 'custom_' + (editId || 'new');
+                icon = 'custom';
+                category = 'custom';
+            }
+            
+            if (editId) {
+                // Update existing
+                const btn = buttonsConfig.find(b => b.id === editId);
+                if (btn) {
+                    btn.label = label;
+                    btn.action = action;
+                    btn.command = command;
+                    btn.icon = icon;
+                    btn.category = category;
+                }
+            } else {
+                // Add new
+                const newId = 'btn-' + Date.now();
+                buttonsConfig.push({
+                    id: newId,
+                    action: action,
+                    command: command,
+                    label: label,
+                    icon: icon,
+                    category: category,
+                    enabled: true
+                });
+            }
+            
+            saveButtonsConfig();
+            renderButtons();
+            renderEditorList();
+            resetForm();
+        }
+
+        // Get icon for preset action
+        function getIconForAction(action) {
+            if (action.startsWith('update_webapp')) return 'refresh';
+            if (action === 'check_ports') return 'network';
+            if (action === 'check_services') return 'server';
+            if (action === 'cleanup') return 'trash';
+            return 'custom';
+        }
+
+        // Reset form
+        function resetForm() {
+            document.getElementById('form-title').textContent = 'Aggiungi Nuovo Pulsante';
+            document.getElementById('edit-button-id').value = '';
+            document.getElementById('btn-label').value = '';
+            document.getElementById('btn-action-type').value = 'preset';
+            document.getElementById('btn-command').value = '';
+            toggleCommandField();
+        }
+
+        // Save buttons configuration to server
+        function saveButtonsConfig() {
+            fetch(SOCKET_URL + '/api/buttons', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(buttonsConfig)
+            })
+            .then(res => res.json())
+            .then(data => console.log('Config salvata:', data))
+            .catch(err => console.error('Errore salvataggio:', err));
+        }
+
+        // Aggiunge una linea al terminale
+        function addLine(text, isError = false) {
+            const line = document.createElement('div');
+            line.className = `text-sm ${isError ? 'terminal-error' : 'terminal-text'}`;
+
+            // Formatta il testo
+            if (text.includes('===')) {
+                line.className += ' font-bold mt-2';
+            } else if (text.includes('[1/5]') || text.includes('[2/5]') || text.includes('[3/5]') ||
+                       text.includes('[4/5]') || text.includes('[5/5]') || text.includes('[1/4]') ||
+                       text.includes('[2/4]') || text.includes('[3/4]') || text.includes('[4/4]')) {
+                line.className += ' text-yellow-400';
+            }
+
+            line.textContent = text;
+            terminalContent.appendChild(line);
+
+            // Auto-scroll in basso
+            terminal.scrollTop = terminal.scrollHeight;
+        }
+
+        // Abilita/disabilita un singolo pulsante
+        function setButtonState(buttonId, enabled, active = false) {
+            const btn = document.getElementById(buttonId);
+            if (btn) {
+                btn.disabled = !enabled;
+                if (active && enabled) {
+                    btn.classList.add('btn-active');
+                } else {
+                    btn.classList.remove('btn-active');
+                }
+            }
+        }
+
+        // Abilita/disabilita tutti i pulsanti
+        function enableAllButtons() {
+            document.querySelectorAll('.action-btn').forEach(btn => {
+                btn.disabled = false;
+                btn.classList.remove('btn-active');
+            });
+        }
+
+        function disableAllButtons() {
+            document.querySelectorAll('.action-btn').forEach(btn => {
+                btn.disabled = true;
+                btn.classList.remove('btn-active');
+            });
+        }
+
+        // Gestisce lo stato di esecuzione
+        function setExecuting(action, executing) {
+            isExecuting = executing;
+
+            if (executing) {
+                disableAllButtons();
+                // Attiva solo il pulsante corrente
+                const btnId = buttonMap[action];
+                if (btnId) {
+                    setButtonState(btnId, true, true);
+                }
+                executionIndicator.classList.remove('hidden');
+                addLine('');
+                addLine(`=== AVVIO OPERAZIONE: ${action} ===`, false);
+                addLine('');
+            } else {
+                enableAllButtons();
+                executionIndicator.classList.add('hidden');
+            }
+        }
+
+        // Esegue un'azione
+        function executeAction(action) {
+            if (isExecuting || !socket || !socket.connected) {
+                return;
+            }
+            socket.emit('execute_action', { action: action });
+        }
+
+        // Pulisce il terminale
+        function clearTerminal() {
+            terminalContent.innerHTML = `
+                <div class="terminal-text text-sm text-gray-500">
+                    // Terminale pulito
+                </div>
+            `;
+        }
+
+        // Avvia la connessione al caricamento della pagina
+        document.addEventListener('DOMContentLoaded', () => {
+            initSocket();
+            // Fallback: abilita pulsanti dopo 2 secondi se socket non risponde
+            setTimeout(() => {
+                if (document.querySelectorAll('.action-btn[disabled]').length > 0) {
+                    enableAllButtons();
+                }
+            }, 2000);
+        });
+    </script>
+
+</body>
+</html>
