@@ -2,7 +2,7 @@ FROM python:3.11-slim
 
 LABEL maintainer="BoltUbuntu"
 LABEL description="Modulo Manutenzione - BoltUbuntu Dashboard"
-LABEL version="6.2Giu2026"
+LABEL version="10.1Giu2026"
 
 # Dipendenze di sistema necessarie
 RUN apt-get update && apt-get install -y --no-install-recommends \

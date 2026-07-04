@@ -50,10 +50,19 @@
         "category": "utility"
     },
     {
-        "id": "btn-1780830987584",
-        "action": "custom_btn-1780830987584",
-        "command": "print \"hello ciccio\"",
-        "label": "Prova testo",
+        "id": "btn-healthcheck",
+        "action": "custom_btn-healthcheck",
+        "command": "echo '================================' && echo '  DOCKER CONTAINERS' && echo '================================' && docker ps --format 'table {{.Names}}\\t{{.Status}}\\t{{.Ports}}' && echo '' && echo '================================' && echo '  DOCKER DISK' && echo '================================' && docker system df && echo '' && echo '================================' && echo '  HOST DISK' && echo '================================' && df -h / && echo '' && echo '================================' && echo '  PROJECT PORTS' && echo '================================' && ss -tulnp | grep -E ':3055|:3061|:8001' || lsof -i -P -n -sTCP:LISTEN | grep -E ':3055|:3061|:8001'",
+        "label": "Health Check Container",
+        "icon": "server",
+        "category": "custom",
+        "enabled": true
+    },
+    {
+        "id": "btn-1781042974746",
+        "label": "\ud83d\ude18",
+        "action": "custom_btn-1781042974746",
+        "command": "echo \u2018pappa\u2019",
         "icon": "custom",
         "category": "custom",
         "enabled": true

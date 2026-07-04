@@ -34,7 +34,7 @@ services:
     ports:
       - "3055:3055"
     volumes:
-      - ./manutenzione/buttons_config.json:/app/buttons_config.json
+      - ./manutenzione:/app
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - /usr/bin/systemctl:/usr/bin/systemctl
       - /usr/sbin/ss:/usr/sbin/ss

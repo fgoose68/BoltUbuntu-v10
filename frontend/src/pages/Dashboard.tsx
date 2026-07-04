@@ -112,7 +112,7 @@ export function Dashboard() {
         </div>
 
         <div className={`mt-8 text-center text-xs font-medium ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>
-          Ver.6.2Giu2026
+          Ver.10.1Giu2026
         </div>
       </div>
     </div>

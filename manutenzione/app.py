@@ -13,6 +13,7 @@ import subprocess
 import threading
 import logging
 from flask import Flask, render_template, jsonify, request
+from flask_cors import CORS
 from flask_socketio import SocketIO, emit
 import eventlet
 eventlet.monkey_patch()
@@ -110,9 +111,18 @@ def load_buttons_config():
 
 
 def save_buttons_config(buttons):
-    """Salva la configurazione dei pulsanti su file JSON"""
-    with open(BUTTONS_CONFIG_FILE, 'w') as f:
-        json.dump(buttons, f, indent=4)
+    """Salva la configurazione dei pulsanti su file JSON in modo atomico (temp + rename)"""
+    try:
+        tmp_file = BUTTONS_CONFIG_FILE + '.tmp'
+        with open(tmp_file, 'w') as f:
+            json.dump(buttons, f, indent=4)
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(tmp_file, BUTTONS_CONFIG_FILE)
+        logger.info("buttons_config.json salvato")
+    except Exception as e:
+        logger.error(f"Errore salvataggio buttons_config.json: {e}")
+        raise
 
 
 # Carica configurazione iniziale
@@ -127,6 +137,9 @@ app = Flask(__name__,
             template_folder='templates',
             static_folder='static')
 app.config['SECRET_KEY'] = 'boltubuntu-maintenance-secret-2026'
+
+# CORS abilitato per tutte le route HTTP da qualunque origine
+CORS(app, supports_credentials=True)
 
 # Inizializzazione SocketIO con eventlet (WebSocket nativo, no Werkzeug dev server)
 socketio = SocketIO(
@@ -222,12 +235,21 @@ def get_buttons():
 
 @app.route('/api/buttons', methods=['POST'])
 def save_buttons():
-    """Salva la nuova configurazione dei pulsanti"""
+    """Salva la nuova configurazione dei pulsanti (corpo = array JSON)"""
     global BUTTONS
-    data = request.get_json()
-    BUTTONS = data
-    save_buttons_config(BUTTONS)
-    return jsonify({"status": "ok", "message": "Configurazione salvata"})
+    try:
+        data = request.get_json(force=True)
+        if not isinstance(data, list):
+            return jsonify({"status": "error", "message": "Dati non validi: atteso array"}), 400
+        BUTTONS = data
+        save_buttons_config(BUTTONS)
+        # Notifica tutti i client connessi della nuova configurazione
+        socketio.emit('buttons_config', {'buttons': BUTTONS}, namespace='/maintenance')
+        logger.info(f"Configurazione aggiornata: {len(BUTTONS)} pulsanti")
+        return jsonify({"status": "ok", "message": "Configurazione salvata", "count": len(BUTTONS)})
+    except Exception as e:
+        logger.error(f"Errore salvataggio pulsanti: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 
 @app.route('/api/buttons/<button_id>', methods=['DELETE'])

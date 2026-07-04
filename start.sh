@@ -8,7 +8,7 @@ PORTS=(8001 3050 3055 3061)
 PROJECT_DIR="/Users/fabrizio/Desktop/AppWeb/BoltUbuntu bozza lavoro"
 
 echo "=========================================="
-echo "  BoltUbuntu - Avvio Pulito (Ver.6.2Giu2026)"
+echo "  BoltUbuntu - Avvio Pulito (Ver.10.1Giu2026)"
 echo "=========================================="
 echo ""
 

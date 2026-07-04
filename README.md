@@ -1,6 +1,11 @@
 # BoltUbuntu Dashboard
 
-**Versione:** Ver.6.2Giu2026
+**Versione:** Ver.10.1Giu2026
+
+Aggiornamenti v10.1:
+- Modulo Manutenzione: gestione pulsanti dinamici (aggiungi, modifica, elimina, riordina)
+- Fix CORS per comunicazione cross-porta frontend/manutenzione
+- Atomic write su `buttons_config.json` per prevenire corruzione
 
 Una Dashboard Web moderna e completa per gestire backup Docker, file Office e monitoraggio hardware del tuo Raspberry Pi 5.
 

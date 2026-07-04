@@ -2,7 +2,7 @@
 ## BoltUbuntu Dashboard
 > 🌍 **Località**: Roma, Italia — **Fuso orario**: Europe/Rome (CEST UTC+2) — Ora: 17:47.
 
-### Versione 6.2Giu2026
+### Versione 10.1Giu2026
 
 ---
 
@@ -218,7 +218,7 @@ Configurazione dell'applicazione.
 - Filtra per tipo di evento
 - Monitora backup, upload, login, errori
 
-### 4.6 System Updates (Ver.6.2Giu2026)
+### 4.6 System Updates (Ver.10.1Giu2026)
 
 Tab dedicata alla gestione aggiornamenti OS/Kernel del Raspberry Pi.
 
@@ -322,7 +322,7 @@ cat > ~/BoltUbuntu/update.sh << 'EOF'
 
 echo "=========================================="
 echo "  BoltUbuntu - Script di Aggiornamento"
-echo "  Ver.6.2Giu2026"
+echo "  Ver.10.1Giu2026"
 echo "=========================================="
 echo ""
 
@@ -620,6 +620,7 @@ sed -i 's/old-name/new-name/g' docker-compose.yml
 
 | Versione | Data | Modifiche |
 |----------|------|-----------|
+| 6.3 | Giugno 2026 | Fix modulo Manutenzione: salvataggio pulsanti dinamici, CORS, atomic write, volume directory |
 | 6.1 | Aprile 2026 | Rinominati container, aggiunto pulsante Delete backup |
 | 2.4 | Marzo 2026 | Versione iniziale con tutte le funzionalità |
 
@@ -635,7 +636,7 @@ sed -i 's/old-name/new-name/g' docker-compose.yml
 
 ## 8. Configurazione Sudoers per System Updates
 
-> ℹ️ **AGGIORNAMENTO Ver.6.2Giu2026 (post-deploy)**: la configurazione sudoers descritta sotto **NON è più necessaria** se il `docker-compose.yml` include `privileged: true` per il backend (default a partire da Ver.6.2Giu2026). Il container gira come root e accede direttamente ai binari `apt-get` e `reboot` montati dall'host. Questa sezione è mantenuta solo come riferimento storico o per chi preferisce eseguire il backend senza `privileged: true` (richiede modifiche al codice).
+> ℹ️ **AGGIORNAMENTO Ver.10.1Giu2026 (post-deploy)**: la configurazione sudoers descritta sotto **NON è più necessaria** se il `docker-compose.yml` include `privileged: true` per il backend (default a partire da Ver.10.1Giu2026). Il container gira come root e accede direttamente ai binari `apt-get` e `reboot` montati dall'host. Questa sezione è mantenuta solo come riferimento storico o per chi preferisce eseguire il backend senza `privileged: true` (richiede modifiche al codice).
 
 ### 8.1 Perché serve (solo modalità non-privileged)
 Il tab System Updates esegue comandi privilegiati (`apt-get upgrade`, `reboot`) dal container backend. Affinché possa farlo senza richiedere password ogni volta, il sistema operativo del Raspberry Pi deve autorizzarli tramite `sudoers`.
@@ -668,7 +669,7 @@ Output atteso:
 Se vedi errori, **NON riavviare nulla** e correggi prima la sintassi (un errore in sudoers può bloccare tutto sudo!).
 
 ### 8.5 Step 4 — Riavvia i container per applicare il nuovo `docker-compose.yml`
-Il file `docker-compose.yml` è già stato aggiornato (Ver.6.2Giu2026) con `privileged: true` e i mount necessari per `apt`. Quindi:
+Il file `docker-compose.yml` è già stato aggiornato (Ver.10.1Giu2026) con `privileged: true` e i mount necessari per `apt`. Quindi:
 
 ```bash
 cd ~/BoltUbuntu
@@ -710,7 +711,7 @@ sudo rm /etc/sudoers.d/boltdash-updates
 
 **Causa:** gli script `npm` nel `frontend/package.json` forzano la porta tramite argomenti CLI (`--port 3000`), che hanno **priorità** sul `vite.config.ts`. Risultato: Vite parte sulla porta 3000 dentro al container, ma Docker espone la 3050 → il frontend non è raggiungibile.
 
-**Soluzione (già applicata in Ver.6.2Giu2026):**
+**Soluzione (già applicata in Ver.10.1Giu2026):**
 Negli script di `frontend/package.json` rimuovere completamente i flag CLI di porta/host, così Vite legge la configurazione ufficiale da `vite.config.ts`:
 
 ```json
@@ -823,7 +824,7 @@ sleep 25
 docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
 ```
 
-Output atteso (Ver.6.2Giu2026+):
+Output atteso (Ver.10.1Giu2026+):
 ```
 NAMES                          STATUS              PORTS
 BoltUbuntu-backend      Up X seconds        0.0.0.0:8001->8001/tcp
@@ -924,6 +925,13 @@ Il modulo Manutenzione è un servizio separato che gira sulla porta **3055** e v
 - Verifica Porte Occupate (`ss -tulnp`)
 - Stato Servizi SaaS (nginx, docker, postgresql, mysql)
 - Pulizia Spazio e Log (apt-get clean, logrotate, find)
+- Gestione dinamica pulsanti: aggiungi, modifica, elimina, riordina i pulsanti direttamente dalla dashboard
+
+**Gestione Pulsanti Dinamica:**
+- Clicca **Gestisci** in alto a destra nella scheda Manutenzione
+- Puoi creare pulsanti **preset** (azioni predefinite) o **custom** (comandi shell liberi)
+- I pulsanti vengono salvati in `manutenzione/buttons_config.json` e persistono tra i riavvii
+- Per modificare un pulsante, clicca l'icona modifica (matita) in ogni voce della lista
 
 **Configurazione Docker:**
 
@@ -940,6 +948,8 @@ manutenzione:
 ```
 
 **Nota**: I 6 pulsanti della scheda Manutenzione non richiedono password quando il container è eseguito con `privileged: true`.
+
+> **Nota importante sul volume**: per far si che le modifiche ai pulsanti (via GUI) vengano salvate e persistano, il container mappa l'intera directory locale `./manutenzione` su `/app` nel container.
 
 **Avvio standalone (senza Docker):**
 
@@ -999,4 +1009,4 @@ services:
 
 
 
-*Documento generato per BoltUbuntu Ver.6.2Giu2026*
+*Documento generato per BoltUbuntu Ver.10.1Giu2026*

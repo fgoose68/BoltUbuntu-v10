@@ -2,7 +2,7 @@
 
 echo "=========================================="
 echo "  BoltUbuntu - Script di Aggiornamento"
-echo "  Ver.6.1Giu2026"
+echo "  Ver.10.1Giu2026"
 echo "=========================================="
 echo ""
 

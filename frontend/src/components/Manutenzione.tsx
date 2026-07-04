@@ -211,12 +211,20 @@ export function Manutenzione() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(buttons),
       });
+      if (!response.ok) {
+        const text = await response.text();
+        alert(`Errore salvataggio: HTTP ${response.status}\n${text}`);
+        return;
+      }
       const data = await response.json();
       if (data.status === 'ok') {
         setButtonsConfig(buttons);
+      } else {
+        alert(`Errore server: ${data.message}`);
       }
     } catch (err) {
       console.error('Errore salvataggio:', err);
+      alert('Errore di rete durante il salvataggio');
     }
   };
 
@@ -337,7 +345,7 @@ export function Manutenzione() {
       <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-700">
         <div>
           <h2 className="text-xl font-bold text-white">Manutenzione</h2>
-          <p className="text-sm text-gray-400">Ver.6.2Giu2026 - Sistema di gestione e manutenzione SaaS</p>
+          <p className="text-sm text-gray-400">Ver.10.1Giu2026 - Sistema di gestione e manutenzione SaaS</p>
         </div>
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
@@ -440,7 +448,7 @@ export function Manutenzione() {
 
       {/* Footer */}
       <div className="mt-3 pt-2 text-center text-gray-500 text-xs border-t border-gray-800">
-        BoltUbuntu Manutenzione Module &bull; Ver.6.2Giu2026 &bull; Powered by Flask-SocketIO
+        BoltUbuntu Manutenzione Module &bull; Ver.10.1Giu2026 &bull; Powered by Flask-SocketIO
       </div>
 
       {/* Modal Gestione Pulsanti */}

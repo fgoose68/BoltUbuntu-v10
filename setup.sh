@@ -2,7 +2,7 @@
 
 echo "=========================================="
 echo "  BoltUbuntu - Setup Script"
-echo "  Ver.6.1Giu2026 (Ubuntu / Debian / ARM / x86_64)"
+echo "  Ver.10.1Giu2026 (Ubuntu / Debian / ARM / x86_64)"
 echo "=========================================="
 
 TZ="Europe/Rome"
