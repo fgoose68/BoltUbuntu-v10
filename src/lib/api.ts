@@ -43,7 +43,7 @@ export class ApiClient {
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({ error: 'Request failed' }));
-      throw new Error(error.error || 'Request failed');
+      throw new Error(error.error || error.detail || 'Request failed');
     }
 
     return response.json();
@@ -71,10 +71,10 @@ export class ApiClient {
     return this.request('/docker/containers');
   }
 
-  async backupContainer(containerId: string, destination: string, backupType: string) {
+  async backupContainer(containerId: string, destination: string, backupType: string, containerName: string) {
     return this.request(`/docker/backup/${containerId}`, {
       method: 'POST',
-      body: JSON.stringify({ destination, backupType }),
+      body: JSON.stringify({ destination, backupType, containerName }),
     });
   }
 
@@ -82,14 +82,20 @@ export class ApiClient {
     return this.request('/docker/backups');
   }
 
+  async deleteBackup(backupId: string) {
+    return this.request(`/docker/backups/${backupId}`, {
+      method: 'DELETE',
+    });
+  }
+
   async getSchedules() {
     return this.request('/docker/schedules');
   }
 
-  async createSchedule(containerUuid: string, cronExpression: string, backupType: string, destination: string) {
+  async createSchedule(containerUuid: string, containerName: string, cronExpression: string, backupType: string, destination: string) {
     return this.request('/docker/schedules', {
       method: 'POST',
-      body: JSON.stringify({ containerUuid, cronExpression, backupType, destination }),
+      body: JSON.stringify({ containerUuid, containerName, cronExpression, backupType, destination }),
     });
   }
 
@@ -236,6 +242,34 @@ export class ApiClient {
     return this.request(`/docker/containers/${containerId}/stop`, {
       method: 'POST',
     });
+  }
+
+  async getSystemInfo() {
+    return this.request('/system/info');
+  }
+
+  async checkUpdates() {
+    return this.request('/system/check-updates', { method: 'POST' });
+  }
+
+  async runSystemUpdate() {
+    return this.request('/system/update', { method: 'POST' });
+  }
+
+  async updateKernel() {
+    return this.request('/system/kernel-update', { method: 'POST' });
+  }
+
+  async systemReboot() {
+    return this.request('/system/reboot', { method: 'POST' });
+  }
+
+  async toggleScheduler() {
+    return this.request('/system/scheduler/toggle', { method: 'POST' });
+  }
+
+  async getUpdateHistory() {
+    return this.request('/system/updates/history');
   }
 }
 

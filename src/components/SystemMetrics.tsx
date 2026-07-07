@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { api } from '../lib/api';
 import { useTheme } from '../contexts/ThemeContext';
+import { UpdatesWidget } from './UpdatesWidget';
+import { MetricsCharts } from './MetricsCharts';
 
 interface Metrics {
   cpu: { usage: number; cores: number };
@@ -132,8 +134,8 @@ export function SystemMetrics() {
           />
           <MetricCard
             title="RAM"
-            value={metrics.ram.used.toFixed(2)}
-            unit={`MB / ${metrics.ram.total} MB`}
+            value={(metrics.ram.used / 1024).toFixed(2)}
+            unit={`GB / ${(metrics.ram.total / 1024).toFixed(2)} GB`}
             usage={metrics.ram.usage}
             icon="🧠"
           />
@@ -153,6 +155,10 @@ export function SystemMetrics() {
           />
         </div>
       </div>
+
+      <UpdatesWidget />
+
+      <MetricsCharts />
 
       <div className={`rounded-xl p-6 border transition-colors duration-300 ${
         theme === 'dark'

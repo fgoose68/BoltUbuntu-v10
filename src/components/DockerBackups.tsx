@@ -80,7 +80,7 @@ export function DockerBackups() {
   const handleBackup = async (containerId: string, destination: string = 'local') => {
     setBackingUp(containerId);
     try {
-      await api.backupContainer(containerId, destination, 'export');
+      await api.backupContainer(containerId, destination, 'export', '');
       alert('Backup started successfully');
       setTimeout(loadData, 2000);
     } catch (err: any) {
